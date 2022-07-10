@@ -16,6 +16,6 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/', require('./router/root'));
+app.use('/', require('./router/index'));
 
 module.exports = app;

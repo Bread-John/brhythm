@@ -1,11 +1,11 @@
 {
-  "name": "butter-stabling-yard",
+  "name": "brhythm",
   "version": "0.0.1",
-  "description": "",
-  "main": "server.js",
+  "description": "An audio streaming & management web application",
+  "main": "./bin/www",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www"
   },
   "repository": {
     "type": "git",
@@ -21,8 +21,7 @@
     "@azure/msal-node": "^1.9.1",
     "cors": "^2.8.5",
     "express": "^4.18.1",
-    "helmet": "^5.1.0",
-    "node-fetch": "^2.6.6"
+    "helmet": "^5.1.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.16"
