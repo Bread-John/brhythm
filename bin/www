@@ -11,7 +11,7 @@ const app = require('../app');
  * Get port from environment and store in Express.
  */
 
-const port = normalizePort(process.env.PORT || '3001');
+const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**
@@ -61,14 +61,13 @@ function onError(error) {
         ? 'Pipe ' + port
         : 'Port ' + port;
 
-    // handle specific listen errors with friendly messages
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            console.error(`[${new Date(Date.now()).toUTCString()}] : HTTPserver : Error - ${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            console.error(`[${new Date(Date.now()).toUTCString()}] : HTTPserver : Error - ${bind} is already in use`);
             process.exit(1);
             break;
         default:
@@ -85,5 +84,6 @@ function onListening() {
     const bind = typeof addr === 'string'
         ? 'pipe ' + addr
         : 'port ' + addr.port;
-    console.log('Listening on ' + bind);
+
+    console.log(`[${new Date(Date.now()).toUTCString()}] : HTTPserver : Info - Listening on ${bind}`);
 }
