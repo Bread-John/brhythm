@@ -1,13 +1,12 @@
-require('dotenv').config();
-
 const cors = require('cors');
 const express = require('express');
 const helmet = require('helmet');
 const session = require('express-session');
 const Redis = require('ioredis');
 const RedisStore = require('connect-redis')(session);
+require('dotenv').config();
 
-const msal = require('./msal');
+const msal = require('./lib/msal');
 
 const app = express();
 
@@ -49,7 +48,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', require('./router/indexRouter'));
 app.use('/auth', require('./router/authRouter'));
 
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     console.error(err.stack);
     res.status(err.status || 500).send(err.message);
 });
