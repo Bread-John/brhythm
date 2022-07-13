@@ -19,12 +19,14 @@
   "homepage": "https://github.com/Bread-John/stabling-yard#readme",
   "dependencies": {
     "@azure/msal-node": "^1.9.1",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@microsoft/microsoft-graph-client": "^3.0.2",
     "connect-redis": "^6.1.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
     "express-session": "^1.17.3",
+    "fluent-ffmpeg": "^2.1.2",
     "helmet": "^5.1.0",
     "ioredis": "^5.1.0",
     "isomorphic-fetch": "^3.0.0"
