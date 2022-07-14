@@ -1,7 +1,6 @@
 const cors = require('cors');
 const express = require('express');
 const helmet = require('helmet');
-const path = require('path');
 const session = require('express-session');
 const Redis = require('ioredis');
 const RedisStore = require('connect-redis')(session);
@@ -45,7 +44,7 @@ app.use(session({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/stream', express.static(path.join(__dirname, 'tmp')));
+
 app.use('/', require('./router/indexRouter'));
 app.use('/auth', require('./router/authRouter'));
 app.use('/management', require('./router/adminRouter'));
