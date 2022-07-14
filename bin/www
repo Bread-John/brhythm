@@ -63,11 +63,11 @@ function onError(error) {
 
     switch (error.code) {
         case 'EACCES':
-            console.error(`[${new Date(Date.now()).toUTCString()}] : HTTP server Error - ${bind} requires elevated privileges`);
+            console.error(`[${new Date(Date.now()).toUTCString()}] - HTTP server Error: ${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(`[${new Date(Date.now()).toUTCString()}] : HTTP server Error - ${bind} is occupied by another application`);
+            console.error(`[${new Date(Date.now()).toUTCString()}] - HTTP server Error: ${bind} is occupied by another application`);
             process.exit(1);
             break;
         default:
@@ -85,5 +85,5 @@ function onListening() {
         ? `Pipe ${addr}`
         : `Port ${addr.port} at ${addr.address}`;
 
-    console.log(`[${new Date(Date.now()).toUTCString()}] : HTTP server Info - Listening on ${bind}`);
+    console.log(`[${new Date(Date.now()).toUTCString()}] - HTTP server Info: Listening on ${bind}`);
 }
