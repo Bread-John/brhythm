@@ -7,45 +7,35 @@ module.exports = function (sequelize) {
         Playlist
     } = sequelize.models;
 
+    // Relationship A (1:n)
+    // User -||------------O>- Song
     User.hasMany(Song, {
-        foreignKey: {
-            name: 'ownerId',
-            allowNull: true
-        }
+        foreignKey: 'ownerId'
     });
     Song.belongsTo(User, {
-        foreignKey: {
-            name: 'ownerId',
-            allowNull: false
-        }
+        foreignKey: 'ownerId'
     });
 
+    // Relationship B (1:n)
+    // User -||------------O<- Playlist
     User.hasMany(Playlist, {
-        foreignKey: {
-            name: 'creatorId',
-            allowNull: true
-        }
+        foreignKey: 'creatorId'
     });
     Playlist.belongsTo(User, {
-        foreignKey: {
-            name: 'creatorId',
-            allowNull: false
-        }
+        foreignKey: 'creatorId'
     });
 
+    // Relationship C (1:n)
+    // Album -||------------|<- Song
     Album.hasMany(Song, {
-        foreignKey: {
-            name: 'albumId',
-            allowNull: false
-        }
+        foreignKey: 'albumId'
     });
     Song.belongsTo(Album, {
-        foreignKey: {
-            name: 'albumId',
-            allowNull: false
-        }
+        foreignKey: 'albumId'
     });
 
+    // Relationship D (m:n)
+    // Artist ->|------------|<- Album
     Artist.belongsToMany(Album, {
         through: 'AlbumArtist',
         foreignKey: 'artistId',
@@ -57,6 +47,8 @@ module.exports = function (sequelize) {
         otherKey: 'artistId'
     });
 
+    // Relationship E (m:n)
+    // Artist ->|------------|<- Song
     Artist.belongsToMany(Song, {
         through: 'SongArtist',
         foreignKey: 'artistId',
@@ -68,6 +60,8 @@ module.exports = function (sequelize) {
         otherKey: 'artistId'
     });
 
+    // Relationship F (m:n)
+    // Playlist ->O------------O<- Song
     Playlist.belongsToMany(Song, {
         through: 'PlaylistSong',
         foreignKey: 'playlistId',

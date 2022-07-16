@@ -12,9 +12,9 @@ module.exports = {
                 });
         });
     },
-    syncModels: function () {
+    syncModels: function (forceSync) {
         return new Promise(function (resolve, reject) {
-            sequelize.sync()
+            sequelize.sync({ force: forceSync })
                 .then(function () {
                     resolve();
                 })

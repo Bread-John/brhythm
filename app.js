@@ -22,7 +22,7 @@ app.use(cors({
 app.use(helmet());
 
 dao
-    .syncModels()
+    .syncModels(false)
     .then(function () {
         console.log(`[${new Date(Date.now()).toUTCString()}] - DAO Info: Data Access Models successfully synced`);
     })
@@ -30,8 +30,6 @@ dao
         console.error(`[${new Date(Date.now()).toUTCString()}] - DAO ${err.name}: ${err.message}`);
         process.exit(1);
     });
-
-msal.initialize(app);
 
 let redisClient = new Redis({
     port: process.env.REDIS_PORT,
@@ -55,6 +53,8 @@ app.use(session({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+msal.initialize(app);
 
 app.use('/', require('./router/indexRouter'));
 app.use('/auth', require('./router/authRouter'));
