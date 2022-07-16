@@ -3,9 +3,8 @@ const { DataTypes } = require('sequelize');
 module.exports = function (sequelize) {
     sequelize.define('User', {
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: false,
-            autoIncrement: true,
             primaryKey: true
         },
         email: {
@@ -20,6 +19,9 @@ module.exports = function (sequelize) {
         lastName: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        password: {
+            type: DataTypes.TEXT
         },
         bio: {
             type: DataTypes.TEXT

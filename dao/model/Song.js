@@ -13,9 +13,6 @@ module.exports = function (sequelize) {
             allowNull: false,
             defaultValue: 'Untitled'
         },
-        lyricist: {
-            type: DataTypes.STRING
-        },
         composer: {
             type: DataTypes.STRING
         },

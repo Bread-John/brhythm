@@ -63,6 +63,7 @@ app.use('/management', require('./router/adminRouter'));
 app.use(function (err, req, res, next) {
     console.error(`[${new Date(Date.now()).toUTCString()}] - ${err.name}: ${err.message}`);
     console.error(err.stack);
+
     res.status(err.status || 500).json({
         error: err.message
     });
