@@ -43,7 +43,6 @@ router.get('/serve/:resourceId/:resourceName', function (req, res, next) {
             stream.on('error', err => next(err));
             stream.on('end', () => res.end());
             stream.pipe(res);
-            res.status(206);
         }
     });
 });

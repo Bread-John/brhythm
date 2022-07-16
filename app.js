@@ -6,6 +6,7 @@ const Redis = require('ioredis');
 const RedisStore = require('connect-redis')(session);
 require('dotenv').config();
 
+const dao = require('./dao/main');
 const msal = require('./lib/msal');
 
 const app = express();
@@ -19,6 +20,16 @@ app.use(cors({
     'optionsSuccessStatus': 200
 }));
 app.use(helmet());
+
+dao
+    .syncModels()
+    .then(function () {
+        console.log(`[${new Date(Date.now()).toUTCString()}] - DAO Info: Data Access Models successfully synced`);
+    })
+    .catch(function (err) {
+        console.error(`[${new Date(Date.now()).toUTCString()}] - DAO ${err.name}: ${err.message}`);
+        process.exit(1);
+    });
 
 msal.initialize(app);
 
