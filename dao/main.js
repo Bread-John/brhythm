@@ -22,5 +22,16 @@ module.exports = {
                     reject(err);
                 });
         });
+    },
+    newTransaction: function () {
+        return new Promise(function (resolve, reject) {
+            sequelize.transaction()
+                .then(function (t) {
+                    resolve(t);
+                })
+                .catch(function (err) {
+                    reject(err);
+                });
+        });
     }
 };

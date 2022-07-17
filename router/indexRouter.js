@@ -6,7 +6,7 @@ const fileUpload = require('../lib/fileUploads');
 const { getUserDetails } = require('../lib/msgraph/User');
 const { getFileById } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
-
+const { newTransaction } = require('../dao/main');
 const { Artist, Album, Song } = require('../dao/config').models;
 
 const router = express.Router();
@@ -15,31 +15,81 @@ router.get('/', function (req, res, next) {
     res.status(200).send('<h2>Hello, world!</h2>');
 });
 
-router.post('/upload', fileUpload.array('files', 10), function (req, res, next) {
-    req.files.map(function (file) {
-        nodeID3.read(file.path, { onlyRaw: true }, function (error, tags) {
-            if (error) next(error);
+router.post('/upload', fileUpload.single('media'), async function (req, res, next) {
+    if (!req.file) {
+        throw new UserFacingError(`Uploaded file is not accepted`, 400);
+    } else {
+        // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
+        const {
+            TIT2, TPE1, TALB, TPE2, TCON,
+            TRCK, TPOS, TCOM, TYER, TPUB,
+            APIC
+        } = nodeID3.read(req.file.path, { onlyRaw: true });
+        const { imageBuffer } = APIC;
+        const [trackNo, totalTrackNo] = TRCK.split('/');
+        const [discNo, totalDiscNo] = TPOS.split('/');
 
-            // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
-            const { TIT2, TPE1, TALB, TPE2, TCON, TRCK, TPOS, TCOM, TYER } = tags;
-            const { imageBuffer } = tags['APIC'];
+        const t = await newTransaction();
+        try {
+            const [artist, ] = await Artist.findOrCreate({
+                where: { name: TPE1 || 'Unnamed Artist' },
+                transaction: t
+            });
 
-            Artist
-                .findOrCreate({
-                    where: { name: TPE1 }
-                })
-                .then(function (artist, created) {
-                    return artist.id;
-                })
-                .then(function (artistId) {
-                    console.log()
-                })
-                .catch(function (error) {
-                    next(error);
-                });
-        });
-    });
-    res.status(200).send('Done');
+            async function createAlbumArtist() {
+                if (TPE2 && TPE2 !== TPE1) {
+                    return await Artist.findOrCreate({
+                        where: { name: TPE2 },
+                        transaction: t
+                    });
+                } else {
+                    return [artist, false];
+                }
+            }
+            const [albumArtist, ] = await createAlbumArtist();
+
+            const [album, ] = await Album.findOrCreate({
+                where: {
+                    title: TALB || 'Untitled',
+                    artistId: albumArtist.id
+                },
+                defaults: {
+                    genre: TCON,
+                    releaseYear: TYER,
+                    totalTrackNo: totalTrackNo,
+                    totalDiscNo: totalDiscNo,
+                    publisher: TPUB,
+                    coverImg: 'local'
+                },
+                transaction: t
+            });
+
+            const [song, created] = await Song.findOrCreate({
+                where: {
+                    title: TIT2 || 'Untitled',
+                    albumId: album.id,
+                    artistId: artist.id,
+                    ownerId: process.env.ADMIN_ACCOUNT_ID
+                },
+                defaults: {
+                    composer: TCOM,
+                    trackNo: trackNo,
+                    discNo: discNo,
+                    fileName: req.file.originalname,
+                    fileLocation: 'ONEDRIVE'
+                },
+                transaction: t
+            });
+
+            await t.commit();
+
+            res.status(200).send('Done');
+        } catch (error) {
+            await t.rollback();
+
+            next(error);
+        }
+    }
 });
 
 router.get('/user', function (req, res, next) {

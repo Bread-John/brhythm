@@ -22,6 +22,9 @@ module.exports = function (sequelize) {
         totalTrackNo: {
             type: DataTypes.INTEGER
         },
+        totalDiscNo: {
+            type: DataTypes.INTEGER
+        },
         publisher: {
             type: DataTypes.STRING
         },
