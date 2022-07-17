@@ -4,11 +4,11 @@ const nodeID3 = require('node-id3');
 
 const fileUpload = require('../lib/fileUploads');
 const { convertToHlsLossy } = require('../lib/ffmpeg');
-const { getUserDetails } = require('../lib/msgraph/User');
-const { createFolder, uploadFile, getFileByPath } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
 const { newTransaction } = require('../dao/main');
 const { Artist, Album, Song } = require('../dao/config').models;
+const { getUserDetails } = require('../lib/msgraph/User');
+const { getFileByPath, createFolder, uploadFile } = require('../lib/msgraph/File');
 
 const router = express.Router();
 
@@ -35,10 +35,13 @@ router.get('/play', async function (req, res, next) {
         try {
             const song = await Song.findOne({ where: { title: title } });
             if (song) {
+                await Song.update({ playCount: song.playCount + 1 }, { where: { id: song.id } });
                 res.status(200).json(song);
             } else {
                 res.status(200).json({});
             }
+
+            await t.commit();
         } catch (error) {
             await t.rollback();
 
