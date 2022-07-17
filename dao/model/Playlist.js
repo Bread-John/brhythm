@@ -16,6 +16,11 @@ module.exports = function (sequelize) {
         description: {
             type: DataTypes.TEXT
         },
+        popularity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
         coverImg: {
             type: DataTypes.TEXT
         },

@@ -8,7 +8,7 @@ module.exports = function (sequelize) {
     } = sequelize.models;
 
     // Relationship A (1:n)
-    // User -||------------O>- Song
+    // User -||------------O<- Song
     User.hasMany(Song, {
         foreignKey: 'ownerId'
     });
@@ -28,36 +28,46 @@ module.exports = function (sequelize) {
     // Relationship C (1:n)
     // Album -||------------|<- Song
     Album.hasMany(Song, {
-        foreignKey: 'albumId'
+        foreignKey: {
+            name: 'albumId',
+            allowNull: false
+        }
     });
     Song.belongsTo(Album, {
-        foreignKey: 'albumId'
+        foreignKey: {
+            name: 'albumId',
+            allowNull: false
+        }
     });
 
-    // Relationship D (m:n)
-    // Artist ->|------------|<- Album
-    Artist.belongsToMany(Album, {
-        through: 'AlbumArtist',
-        foreignKey: 'artistId',
-        otherKey: 'albumId'
+    // Relationship D (1:n)
+    // Artist -||------------|<- Album
+    Artist.hasMany(Album, {
+        foreignKey: {
+            name: 'artistId',
+            allowNull: false
+        }
     });
-    Album.belongsToMany(Artist, {
-        through: 'AlbumArtist',
-        foreignKey: 'albumId',
-        otherKey: 'artistId'
+    Album.belongsTo(Artist, {
+        foreignKey: {
+            name: 'artistId',
+            allowNull: false
+        }
     });
 
-    // Relationship E (m:n)
-    // Artist ->|------------|<- Song
-    Artist.belongsToMany(Song, {
-        through: 'SongArtist',
-        foreignKey: 'artistId',
-        otherKey: 'songId'
+    // Relationship E (1:n)
+    // Artist -||------------|<- Song
+    Artist.hasMany(Song, {
+        foreignKey: {
+            name: 'artistId',
+            allowNull: false
+        }
     });
-    Song.belongsToMany(Artist, {
-        through: 'SongArtist',
-        foreignKey: 'songId',
-        otherKey: 'artistId'
+    Song.belongsTo(Artist, {
+        foreignKey: {
+            name: 'artistId',
+            allowNull: false
+        }
     });
 
     // Relationship F (m:n)

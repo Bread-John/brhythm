@@ -50,9 +50,7 @@ const models = [
     require('./model/Playlist'),
     require('./model/Song'),
     require('./model/User'),
-    require('./model/AlbumArtist'),
-    require('./model/PlaylistSong'),
-    require('./model/SongArtist')
+    require('./model/PlaylistSong')
 ];
 models.map(function (model) {
     model(sequelize);
