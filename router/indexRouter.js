@@ -1,14 +1,16 @@
 const express = require('express');
 const fs = require('fs');
 const nodeID3 = require('node-id3');
+const path = require('path');
 
 const fileUpload = require('../lib/fileUploads');
 const { convertToHlsLossy } = require('../lib/ffmpeg');
+const { parseRange, validateRange, extToMIME} = require('../lib/variableStreamUtil');
 const { UserFacingError } = require('../lib/customError');
 const { newTransaction } = require('../dao/main');
 const { Artist, Album, Song } = require('../dao/config').models;
 const { getUserDetails } = require('../lib/msgraph/User');
-const { getFileByPath, createFolder, uploadFile } = require('../lib/msgraph/File');
+const { getFileInfoByName, getFileByName, getPartialFileByName, createFolder, uploadFile } = require('../lib/msgraph/File');
 
 const router = express.Router();
 
@@ -31,7 +33,6 @@ router.get('/play', async function (req, res, next) {
     if (!title) {
         next(new UserFacingError(`Bad request`, 400));
     } else {
-        const t = newTransaction();
         try {
             const song = await Song.findOne({ where: { title: title } });
             if (song) {
@@ -40,35 +41,69 @@ router.get('/play', async function (req, res, next) {
             } else {
                 res.status(200).json({});
             }
-
-            await t.commit();
         } catch (error) {
-            await t.rollback();
-
             next(error);
         }
     }
 });
 
-router.get('/stream/:resourceId/:resourceName', function (req, res, next) {
+router.get('/stream/:resourceId/:resourceName', async function (req, res, next) {
     const { resourceId, resourceName } = req.params;
-
-    getFileByPath(req.app.locals.msalClient, resourceId, resourceName)
-        .then(function (stream) {
-            stream.on('error', function (err) { next(err); });
-            stream.on('end', function () { res.end(); });
-            stream.pipe(res);
-        })
-        .catch(function (error) {
-            next(error);
-        });
+    try {
+        const song = await Song.findOne({ where: { fileIdentifier: resourceId } });
+        if (!song) {
+            next(new UserFacingError(`Resource ${resourceId} does not exist`, 404));
+        } else {
+            const range = req.headers['range'];
+            if (range) {
+                getFileInfoByName(req.app.locals.msalClient, resourceName)
+                    .then(function (info) {
+                        const [start, end] = parseRange(range, info.size);
+                        if (!validateRange(start, end, info.size)) {
+                            next(new UserFacingError(`Requested range is not inside the size of the resource`, 416));
+                        } else {
+                            getPartialFileByName(req.app.locals.msalClient, resourceName, start, end)
+                                .then(function (stream) {
+                                    const resHeaders = {
+                                        'Accept-Ranges': `bytes`,
+                                        'Content-Length': start === end ? 0 : end - start + 1,
+                                        'Content-Range': `bytes ${start}-${end}/${info.size}`,
+                                        'Content-Type': extToMIME(path.extname(resourceName))
+                                    };
+                                    res.writeHead(206, resHeaders);
+                                    stream.pipe(res);
+                                    stream.on('error', function (err) { next(err); });
+                                    //stream.on('end', function () { res.end(); });
+                                })
+                                .catch(function (error) {
+                                    next(error);
+                                });
+                        }
+                    })
+            } else {
+                getFileByName(req.app.locals.msalClient, resourceName)
+                    .then(function (stream) {
+                        const resHeaders = { 'Content-Type': extToMIME(path.extname(resourceName)) };
+                        res.writeHead(200, resHeaders);
+                        stream.pipe(res);
+                        stream.on('error', function (err) { next(err); });
+                        //stream.on('end', function () { res.end(); });
+                    })
+                    .catch(function (error) {
+                        next(error);
+                    });
+            }
+        }
+    } catch (error) {
+        next(error);
+    }
 });
 
 router.post('/upload', fileUpload.single('media'), async function (req, res, next) {
     if (!req.file) {
         next(new UserFacingError(`Uploaded file is not accepted`, 400));
     } else {
-        const folderIdentifier = req.file.destination.split('/').at(-1);
+        const fileIdentifier = req.file.filename.split('_').at(1);
 
         // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
         const {
@@ -128,50 +163,32 @@ router.post('/upload', fileUpload.single('media'), async function (req, res, nex
                     trackNo: trackNo,
                     discNo: discNo,
                     fileName: req.file.originalname,
-                    fileLocation: `BrhythmFiles/${folderIdentifier}`
+                    fileIdentifier: fileIdentifier
                 },
                 transaction: t
             });
 
-            await convertToHlsLossy(req.file.destination, req.file.filename)
-                .then(function () {
-                    createFolder(req.app.locals.msalClient, folderIdentifier)
-                        .then(function (folder) {
-                            fs.readdir(req.file.destination, function (err, files) {
-                                if (err) throw err;
-                                for (const file of files) {
-                                    uploadFile(
-                                        req.app.locals.msalClient,
-                                        `${req.file.destination}/${file}`,
-                                        file,
-                                        folder.id
-                                    )
-                                        .then(function (result) {
-                                            if (result) {
-                                                console.log(
-                                                    `[${new Date(Date.now()).toUTCString()}] - OneDrive Info: File "${file}" has been uploaded`
-                                                );
-                                                fs.rm(`${req.file.destination}/${file}`, function (err) {
-                                                    if (err) throw err;
-                                                    console.log(
-                                                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: Local copy of File "${file}" has been deleted`
-                                                    );
-                                                });
-                                            }
-                                        })
-                                        .catch(function (error) {
-                                            throw error;
-                                        });
-                                }
-                            });
-                        })
-                        .catch(function (error) {
-                            throw error;
+            await convertToHlsLossy(fileIdentifier, req.file.filename);
+
+            const folder = await createFolder(req.app.locals.msalClient, fileIdentifier);
+
+            fs.readdir(req.file.destination, async function (err, files) {
+                if (err) throw err;
+                for (const file of files) {
+                    const result = await uploadFile(req.app.locals.msalClient, `${req.file.destination}/${file}`, file, folder);
+                    if (result) {
+                        console.log(
+                            `[${new Date(Date.now()).toUTCString()}] - OneDrive Info: File "${file}" has been uploaded`
+                        );
+                        fs.rm(`${req.file.destination}/${file}`, function (err) {
+                            if (err) throw err;
+                            console.log(
+                                `[${new Date(Date.now()).toUTCString()}] - FileSys Info: Local copy of File "${file}" has been deleted`
+                            );
                         });
-                })
-                .catch(function (error) {
-                    throw error;
-                });
+                    }
+                }
+            });
 
             await t.commit();
 

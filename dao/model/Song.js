@@ -34,9 +34,10 @@ module.exports = function (sequelize) {
             type: DataTypes.TEXT,
             allowNull: false
         },
-        fileLocation: {
+        fileIdentifier: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: false,
+            unique: true
         },
         allowDownload: {
             type: DataTypes.BOOLEAN,
