@@ -3,7 +3,7 @@ const nodeID3 = require('node-id3');
 const path = require('path');
 
 const multer = require('../lib/multer');
-const { convertToHlsLossy } = require('../lib/ffmpeg');
+const { analyseMedia, convertToHlsLossy } = require('../lib/ffmpeg');
 const { parseRange, validateRange, extToMIME } = require('../lib/varStreamUtil');
 const { UserFacingError } = require('../lib/customError');
 const { newTransaction } = require('../dao/main');
@@ -17,17 +17,22 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/play', async function (req, res, next) {
-    const { title } = req.query;
-    if (!title) {
+    const { songId } = req.query;
+    if (!songId) {
         next(new UserFacingError(`Bad request`, 400));
     } else {
         try {
-            const song = await Song.findOne({ where: { title: title } });
-            if (song) {
-                await Song.update({ playCount: song.playCount + 1 }, { where: { id: song.id } });
-                res.status(200).json(song);
+            const song = await Song.findByPk(songId);
+            if (!song) {
+                next(new UserFacingError(`Music of ID (${songId}) does not exist`, 404));
             } else {
-                res.status(200).json({});
+                const { fileName, fileIdentifier, visibility, ...rest } = await Song.update({
+                    playCount: song.playCount + 1
+                }, {
+                    where: { id: song.id },
+                    returning: true
+                });
+                res.status(200).json(rest);
             }
         } catch (error) {
             next(error);
@@ -109,6 +114,11 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
 
         const t = await newTransaction();
         try {
+            const { duration } = await analyseMedia(req.file.path);
+            if (duration > 60 * 60) {
+                next(new UserFacingError(`Uploaded file is not accepted`, 400));
+            }
+
             const outputFiles = await convertToHlsLossy(fileIdentifier, req.file.filename);
             for (const file of outputFiles) {
                 const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
@@ -180,6 +190,7 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                     composer: TCOM,
                     trackNo: trackNo,
                     discNo: discNo,
+                    duration: duration,
                     fileName: req.file.originalname,
                     fileIdentifier: fileIdentifier
                 },

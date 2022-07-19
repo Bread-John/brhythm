@@ -30,6 +30,10 @@ module.exports = function (sequelize) {
             allowNull: false,
             defaultValue: 0
         },
+        duration: {
+            type: DataTypes.DOUBLE,
+            allowNull: false
+        },
         fileName: {
             type: DataTypes.TEXT,
             allowNull: false
