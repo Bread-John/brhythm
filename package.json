@@ -1,6 +1,6 @@
 {
   "name": "brhythm",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "An audio streaming & management web application",
   "main": "./bin/www",
   "scripts": {
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Bread-John/stabling-yard.git"
+    "url": "git+https://github.com/Bread-John/brhythm.git"
   },
   "author": "John Bread",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/Bread-John/stabling-yard/issues"
+    "url": "https://github.com/Bread-John/brhythm/issues"
   },
-  "homepage": "https://github.com/Bread-John/stabling-yard#readme",
+  "homepage": "https://github.com/Bread-John/brhythm#readme",
   "dependencies": {
     "@azure/msal-node": "^1.9.1",
     "@microsoft/microsoft-graph-client": "^3.0.2",
@@ -37,6 +37,6 @@
     "sequelize": "^6.21.3"
   },
   "devDependencies": {
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.19"
   }
 }
