@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const nodeID3 = require('node-id3');
 const path = require('path');
 
@@ -126,24 +127,12 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                 console.log(
                     `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
                 );
-                /*fs.rm(file, function (err) {
-                    if (err) throw err;
-                    console.log(
-                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${file}" has been deleted`
-                    );
-                });*/
             }
             const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'source');
             const result = await uploadFileToParent(req.app.locals.msalClient, req.file.path, folderId);
             console.log(
                 `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
             );
-            /*fs.rm(req.file.path, function (err) {
-                if (err) throw err;
-                console.log(
-                    `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
-                );
-            });*/
 
             const [artist, ] = await Artist.findOrCreate({
                 where: { name: TPE1 || 'Unnamed Artist' },
@@ -206,12 +195,18 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
         } catch (error) {
             await t.rollback();
 
-            /*fs.rm(req.file.path, function () {
-                console.log(
-                    `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
-                );
+            fs.rm(req.file.path, function (err) {
+                if (err) {
+                    console.error(
+                        `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${req.file.path}"`
+                    );
+                } else {
+                    console.log(
+                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
+                    );
+                }
                 next(error);
-            });*/
+            });
         }
     }
 });
