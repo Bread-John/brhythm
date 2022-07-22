@@ -12,27 +12,21 @@ module.exports = function (sequelize) {
             allowNull: false,
             unique: true
         },
-        firstName: {
+        displayName: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        firstName: {
+            type: DataTypes.STRING
         },
         lastName: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        password: {
-            type: DataTypes.TEXT
+            type: DataTypes.STRING
         },
         bio: {
             type: DataTypes.TEXT
         },
         profileImg: {
             type: DataTypes.TEXT
-        },
-        isVerified: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
         },
         isSuspended: {
             type: DataTypes.BOOLEAN,

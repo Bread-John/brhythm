@@ -22,8 +22,10 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
         // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
         const {
             TIT2, TPE1, TALB, TPE2, TCON,
-            TRCK, TPOS, TCOM, TYER, TPUB
+            TRCK, TPOS, TCOM, TYER, TPUB,
+            APIC
         } = nodeID3.read(req.file.path, { onlyRaw: true });
+        const { imageBuffer } = APIC ? APIC : undefined;
         const [trackNo, totalTrackNo] = TRCK ? TRCK.split('/') : [];
         const [discNo, totalDiscNo] = TPOS ? TPOS.split('/') : [];
 
@@ -47,6 +49,17 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
             console.log(
                 `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
             );
+            /*fs.writeFile(`${req.file.destination}/${fileIdentifier}.png`, imageBuffer, 'utf-8', async function (err) {
+                if (err) {
+                    throw err;
+                } else {
+                    const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'cover');
+                    const result = await uploadFileToParent(req.app.locals.msalClient, `${req.file.destination}/${fileIdentifier}.png`, folderId);
+                    console.log(
+                        `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
+                    );
+                }
+            });*/
 
             const [artist, ] = await Artist.findOrCreate({
                 where: { name: TPE1 || 'Unnamed Artist' },

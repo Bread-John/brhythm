@@ -7,6 +7,7 @@ const RedisStore = require('connect-redis')(session);
 require('dotenv').config();
 
 const dao = require('./dao/main');
+const passport = require('./lib/passport');
 const msal = require('./lib/msal');
 
 const app = express();
@@ -53,6 +54,9 @@ app.use(session({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 msal.initialize(app);
 

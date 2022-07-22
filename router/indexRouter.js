@@ -13,6 +13,14 @@ router.get('/', function (req, res, next) {
     res.status(200).send('<h2>Hello, world!</h2>');
 });
 
+router.get('/user', function (req, res, next) {
+    if (req.isAuthenticated()) {
+        res.status(200).json(req.user);
+    } else {
+        res.status(403).json({});
+    }
+});
+
 router.get('/play', async function (req, res, next) {
     const { songId } = req.query;
     if (!songId) {
@@ -21,7 +29,7 @@ router.get('/play', async function (req, res, next) {
         try {
             const song = await Song.findByPk(songId);
             if (!song) {
-                next(new UserFacingError(`Music of ID (${songId}) does not exist`, 404));
+                next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
             } else {
                 const { fileName, fileIdentifier, visibility, ...rest } = await Song.update({
                     playCount: song.playCount + 1
