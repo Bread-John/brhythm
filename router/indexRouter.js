@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 
+const { ensureAuthenticated } = require('../lib/passport');
 const { parseRange, validateRange, extToMIME } = require('../lib/varStreamUtil');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
@@ -13,12 +14,8 @@ router.get('/', function (req, res, next) {
     res.status(200).send('<h2>Hello, world!</h2>');
 });
 
-router.get('/user', function (req, res, next) {
-    if (req.isAuthenticated()) {
-        res.status(200).json(req.user);
-    } else {
-        res.status(403).json({});
-    }
+router.get('/user', ensureAuthenticated, function (req, res, next) {
+    res.status(200).json(req.user);
 });
 
 router.get('/play', async function (req, res, next) {
@@ -51,7 +48,7 @@ router.get('/stream/:resourceName', async function (req, res, next) {
     try {
         const song = await Song.findOne({ where: { fileIdentifier: resourceId } });
         if (!song) {
-            next(new UserFacingError(`Resource does not exist`, 404));
+            next(new UserFacingError(`Could not find requested resource`, 404));
         } else {
             const remotePath = `stream/${resourceName}`;
 
@@ -101,6 +98,10 @@ router.get('/stream/:resourceName', async function (req, res, next) {
     } catch (error) {
         next(error);
     }
+});
+
+router.all('*', function (req, res, next) {
+    next(UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
 });
 
 module.exports = router;
