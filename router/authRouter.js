@@ -1,6 +1,7 @@
 const express = require('express');
 const passport = require('passport');
-const {UserFacingError} = require("../lib/customError");
+
+const { UserFacingError } = require('../lib/customError');
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.get('/signout', function (req, res, next) {
 });
 
 router.all('*', function (req, res, next) {
-    next(UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
+    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
 });
 
 module.exports = router;

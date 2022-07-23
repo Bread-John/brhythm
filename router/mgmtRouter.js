@@ -25,7 +25,7 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
             TRCK, TPOS, TCOM, TYER, TPUB,
             APIC
         } = nodeID3.read(req.file.path, { onlyRaw: true });
-        const { imageBuffer } = APIC ? APIC : undefined;
+        const { imageBuffer } = APIC ? APIC : {};
         const [trackNo, totalTrackNo] = TRCK ? TRCK.split('/') : [];
         const [discNo, totalDiscNo] = TPOS ? TPOS.split('/') : [];
 
@@ -122,7 +122,7 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
         } catch (error) {
             await t.rollback();
 
-            fs.rm(req.file.path, function (err) {
+            fs.unlink(req.file.path, function (err) {
                 if (err) {
                     console.error(
                         `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${req.file.path}"`
@@ -143,7 +143,7 @@ router.get('/download', function (req, res, next) {
 });
 
 router.all('*', function (req, res, next) {
-    next(UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
+    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
 });
 
 module.exports = router;
