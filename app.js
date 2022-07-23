@@ -1,4 +1,5 @@
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const express = require('express');
 const helmet = require('helmet');
 const passport = require('passport');
@@ -40,6 +41,8 @@ let redisClient = new Redis({
     password: process.env.REDIS_PASS
 });
 
+app.use(cookieParser());
+
 app.use(session({
     cookie: {
         secure: process.env.CURRENT_ENV !== 'dev',
@@ -63,6 +66,7 @@ passportStrategy.initialize(passport);
 msal.initialize(app);
 
 app.use('/', require('./router/indexRouter'));
+app.use('/artwork', require('./router/artworkRouter'));
 app.use('/auth', require('./router/authRouter'));
 app.use('/management', require('./router/mgmtRouter'));
 
