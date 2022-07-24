@@ -11,8 +11,8 @@ const { Album, Artist, Song } = require('../dao/config').models;
 
 const router = express.Router();
 
-router.get('/', function (req, res, next) {
-    res.status(200).send('<h2>Hello, world!</h2>');
+router.get('/', function (req, res) {
+    res.status(418).json({ message: 'Could not brew coffee with a teapot 🫖' });
 });
 
 router.get('/user', ensureAuthenticated, function (req, res, next) {
