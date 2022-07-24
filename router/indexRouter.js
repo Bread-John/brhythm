@@ -2,10 +2,10 @@ const express = require('express');
 const path = require('path');
 
 const { ensureAuthenticated } = require('../lib/passport');
-const { generateAuthToken, verifyAuthToken } = require('../lib/contentAuthorization');
-const { parseRange, validateRange, extToMIME } = require('../lib/varStreamUtil');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
 const { UserFacingError, ApplicationError} = require('../lib/customError');
+const { generateAuthToken, verifyAuthToken } = require('../util/playbackToken');
+const { parseRange, validateRange, extToMIME } = require('../util/resHeaders');
 
 const { Album, Artist, Song } = require('../dao/config').models;
 
@@ -34,7 +34,7 @@ router.get('/play', async function (req, res, next) {
                 const songInfo = {
                     title: song.title,
                     artist: { id: song.Artist.id, name: song.Artist.name },
-                    album: { id: song.Album.id, name: song.Album.name, coverArt: song.Album.coverImg },
+                    album: { id: song.Album.id, title: song.Album.title, coverArt: song.Album.coverImg },
                     duration: song.duration
                 };
 
@@ -86,7 +86,7 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                             .then(function (info) {
                                 const [start, end] = parseRange(range, info.size);
                                 if (!validateRange(start, end, info.size)) {
-                                    next(new UserFacingError(`Requested range is not inside the size of the resource`, 416));
+                                    next(new UserFacingError(`Requested range is not inside the resource size`, 416));
                                 } else {
                                     getFileSliceByPath(req.app.locals.msalClient, remotePath, start, end)
                                         .then(function (stream) {

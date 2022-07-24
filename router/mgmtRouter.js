@@ -4,9 +4,10 @@ const nodeID3 = require('node-id3');
 const path = require('path');
 
 const multer = require('../lib/multer');
-const { analyseMedia, convertToHlsLossy } = require('../lib/ffmpeg');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
+const { analyseMedia, convertToHlsLossy } = require('../util/ffmpeg');
+const { getCoverArt, getAlbumDesc } = require('../util/musicMetadata');
 
 const { newTransaction } = require('../dao/main');
 const { Artist, Album, Song } = require('../dao/config').models;
@@ -22,10 +23,8 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
         // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
         const {
             TIT2, TPE1, TALB, TPE2, TCON,
-            TRCK, TPOS, TCOM, TYER, TPUB,
-            APIC
+            TRCK, TPOS, TCOM, TYER, TPUB
         } = nodeID3.read(req.file.path, { onlyRaw: true });
-        const { imageBuffer } = APIC ? APIC : {};
         const [trackNo, totalTrackNo] = TRCK ? TRCK.split('/') : [];
         const [discNo, totalDiscNo] = TPOS ? TPOS.split('/') : [];
 
@@ -39,27 +38,33 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
             const outputFiles = await convertToHlsLossy(fileIdentifier, req.file.filename);
             for (const file of outputFiles) {
                 const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
-                const result = await uploadFileToParent(req.app.locals.msalClient, file, folderId);
-                console.log(
-                    `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
-                );
+                await uploadFileToParent(req.app.locals.msalClient, file, folderId);
+                fs.unlink(file, function (err) {
+                    if (err) {
+                        console.error(
+                            `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${file}"`
+                        );
+                    } else {
+                        console.log(
+                            `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${file}" has been deleted`
+                        );
+                    }
+                });
             }
+
             const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'source');
-            const result = await uploadFileToParent(req.app.locals.msalClient, req.file.path, folderId);
-            console.log(
-                `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
-            );
-            /*fs.writeFile(`${req.file.destination}/${fileIdentifier}.png`, imageBuffer, 'utf-8', async function (err) {
+            await uploadFileToParent(req.app.locals.msalClient, req.file.path, folderId);
+            fs.unlink(req.file.path, function (err) {
                 if (err) {
-                    throw err;
+                    console.error(
+                        `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${req.file.path}"`
+                    );
                 } else {
-                    const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'cover');
-                    const result = await uploadFileToParent(req.app.locals.msalClient, `${req.file.destination}/${fileIdentifier}.png`, folderId);
                     console.log(
-                        `[${new Date(Date.now()).toUTCString()}] - MSGraph Info: File "${result['name']}" has been uploaded`
+                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
                     );
                 }
-            });*/
+            });
 
             const [artist, ] = await Artist.findOrCreate({
                 where: { name: TPE1 || 'Unnamed Artist' },
@@ -76,9 +81,10 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                     return [artist, false];
                 }
             }
-
             const [albumArtist, ] = await createAlbumArtist();
 
+            const description = await getAlbumDesc(TALB, TPE2 ? TPE2 : TPE1);
+            const coverImg = await getCoverArt(TALB, TPE2 ? TPE2 : TPE1);
             const [album, ] = await Album.findOrCreate({
                 where: {
                     title: TALB || 'Untitled',
@@ -90,7 +96,8 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                     totalTrackNo: totalTrackNo,
                     totalDiscNo: totalDiscNo,
                     publisher: TPUB,
-                    coverImg: 'local'
+                    description,
+                    coverImg
                 },
                 transaction: t
             });
