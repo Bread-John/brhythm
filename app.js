@@ -66,9 +66,6 @@ passportStrategy.initialize(passport);
 msal.initialize(app);
 
 app.use('/', require('./router/indexRouter'));
-app.use('/artwork', require('./router/artworkRouter'));
-app.use('/auth', require('./router/authRouter'));
-app.use('/management', require('./router/mgmtRouter'));
 
 app.use(function (err, req, res, next) {
     console.error(`[${new Date(Date.now()).toUTCString()}] - ${err.name}: ${err.message}`);

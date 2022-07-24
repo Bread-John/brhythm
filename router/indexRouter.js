@@ -137,4 +137,12 @@ router.get('/stream/:resourceName', async function (req, res, next) {
     }
 });
 
+router.use('/artwork', require('./artworkRouter'));
+router.use('/auth', require('./authRouter'));
+router.use('/management', require('./mgmtRouter'));
+
+router.all('*', function (req, res, next) {
+    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
+});
+
 module.exports = router;
