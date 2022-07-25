@@ -29,35 +29,40 @@ router.get('/play', async function (req, res, next) {
             if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
             } else {
-                await Song.update({ playCount: song.playCount + 1 }, { where: { id: song.id } });
+                if (song.visibility === '1' && !req.isAuthenticated()) {
+                    next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
+                } else {
+                    await Song.increment({ playCount: 1 }, { where: { id: song.id } });
 
-                const songInfo = {
-                    title: song.title,
-                    artist: { id: song.Artist.id, name: song.Artist.name },
-                    album: { id: song.Album.id, title: song.Album.title, coverArt: song.Album.coverImg },
-                    duration: song.duration
-                };
+                    const songInfo = {
+                        title: song.title,
+                        artist: { id: song.Artist.id, name: song.Artist.name },
+                        album: { id: song.Album.id, title: song.Album.title, coverArt: song.Album.coverImg },
+                        duration: song.duration
+                    };
 
-                const tokenExpiration = Math.floor(song.duration) + 5;
-                generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
-                    .then(function (token) {
-                        res
-                            .status(200)
-                            .cookie('media-access', token, { httpOnly: true, maxAge: tokenExpiration * 1000 })
-                            .json({
-                                mediaInfo: songInfo,
-                                res: [{
-                                    url: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
-                                    token: token
-                                }]
-                            });
-                    })
-                    .catch(function (error) {
-                        console.error(
-                            `[${new Date(Date.now()).toUTCString()}] - ${error.name}: ${error.message}`
-                        );
-                        next(new ApplicationError(`Failed to generate media authorization token`));
-                    });
+                    // Token set to expire in the duration of the song, plus a grace period of 5s
+                    const tokenExpiration = Math.floor(song.duration) + 5;
+                    generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
+                        .then(function (token) {
+                            res
+                                .status(200)
+                                .cookie('media-access', token, { httpOnly: true, maxAge: tokenExpiration * 1000 })
+                                .json({
+                                    mediaInfo: songInfo,
+                                    res: [{
+                                        url: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                                        token: token
+                                    }]
+                                });
+                        })
+                        .catch(function (error) {
+                            console.error(
+                                `[${new Date(Date.now()).toUTCString()}] - ${error.name}: ${error.message}`
+                            );
+                            next(new ApplicationError(`Failed to generate media authorization token`));
+                        });
+                }
             }
         } catch (error) {
             next(error);

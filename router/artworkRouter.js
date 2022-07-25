@@ -30,8 +30,54 @@ router.get('/album', function (req, res, next) {
         next(new UserFacingError(`Bad request`, 400));
     } else {
         Album
-            .findByPk(albumId, { include: [Artist, Song] })
-            .then(function (album) {})
+            .findByPk(albumId, {
+                include: [Artist, {
+                    model: Song,
+                    include: [Artist],
+                    attributes: { exclude: ['fileName', 'fileIdentifier', 'ownerId', 'createdAt', 'updatedAt'] }
+                }],
+                attributes: { exclude: ['createdAt', 'updatedAt'] }
+            })
+            .then(function (album) {
+                if (!album) {
+                    next(new UserFacingError(`Album of ID ${albumId} does not exist`, 404));
+                } else {
+                    res.status(200).json(album);
+                }
+            })
+            .catch(function (error) {
+                next(error);
+            });
+    }
+});
+
+router.get('/artist', function (req, res, next) {
+    const { artistId, limit, offset } = req.query;
+    if (!artistId) {
+        next(new UserFacingError(`Bad request`, 400));
+    } else {
+        Artist
+            .findByPk(artistId, {
+                include: [{
+                    model: Song,
+                    include: [Artist],
+                    attributes: { exclude: ['fileName', 'fileIdentifier', 'ownerId', 'createdAt', 'updatedAt'] },
+                    limit: 10
+                }, {
+                    model: Album,
+                    attributes: { exclude: ['createdAt', 'updatedAt'] },
+                    right: true
+                }],
+                attributes: { exclude: ['createdAt', 'updatedAt'] },
+                order: [[Album, 'releaseYear', 'DESC']]
+            })
+            .then(function (artist) {
+                if (!artist) {
+                    next(new UserFacingError(`Album of ID ${artistId} does not exist`, 404));
+                } else {
+                    res.status(200).json(artist);
+                }
+            })
             .catch(function (error) {
                 next(error);
             });
