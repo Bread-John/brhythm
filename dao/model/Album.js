@@ -19,6 +19,9 @@ module.exports = function (sequelize) {
         releaseYear: {
             type: DataTypes.STRING(4)
         },
+        releaseDate: {
+            type: DataTypes.DATE
+        },
         totalTrackNo: {
             type: DataTypes.INTEGER
         },

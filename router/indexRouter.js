@@ -3,7 +3,7 @@ const path = require('path');
 
 const { ensureAuthenticated } = require('../lib/passport');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
-const { UserFacingError, ApplicationError} = require('../lib/customError');
+const { ApplicationError, UserFacingError } = require('../lib/customError');
 const { generateAuthToken, verifyAuthToken } = require('../util/playbackToken');
 const { parseRange, validateRange, extToMIME } = require('../util/resHeaders');
 
@@ -19,7 +19,7 @@ router.get('/user', ensureAuthenticated, function (req, res, next) {
     res.status(200).json(req.user);
 });
 
-router.get('/play', async function (req, res, next) {
+router.get('/playback', async function (req, res, next) {
     const { songId } = req.query;
     if (!songId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -32,7 +32,7 @@ router.get('/play', async function (req, res, next) {
                 if (song.visibility === '1' && !req.isAuthenticated()) {
                     next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
                 } else {
-                    await Song.increment({ playCount: 1 }, { where: { id: song.id } });
+                    await Song.increment('playCount', { where: { id: song.id } });
 
                     const songInfo = {
                         title: song.title,
@@ -41,25 +41,25 @@ router.get('/play', async function (req, res, next) {
                         duration: song.duration
                     };
 
-                    // Token set to expire in the duration of the song, plus a grace period of 5s
+                    // Token set to expire in the duration of the song, plus a grace period of 5sec
                     const tokenExpiration = Math.floor(song.duration) + 5;
                     generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
                         .then(function (token) {
                             res
                                 .status(200)
-                                .cookie('media-access', token, { httpOnly: true, maxAge: tokenExpiration * 1000 })
+                                .cookie('brhythm-acsgrt', token, {
+                                    httpOnly: true,
+                                    maxAge: 60 * 60 * 1000,
+                                    path: '/stream',
+                                    secure: process.env.CURRENT_ENV !== 'dev'
+                                })
                                 .json({
                                     mediaInfo: songInfo,
-                                    res: [{
-                                        url: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
-                                        token: token
-                                    }]
+                                    contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                                    keyRedemptionCode: ''
                                 });
                         })
                         .catch(function (error) {
-                            console.error(
-                                `[${new Date(Date.now()).toUTCString()}] - ${error.name}: ${error.message}`
-                            );
                             next(new ApplicationError(`Failed to generate media authorization token`));
                         });
                 }
@@ -73,10 +73,10 @@ router.get('/play', async function (req, res, next) {
 router.get('/stream/:resourceName', async function (req, res, next) {
     const { resourceName } = req.params;
     const [, resourceId] = resourceName.split('_');
-    const token = req.cookies['media-access'];
+    const token = req.cookies['brhythm-acsgrt'];
 
     if (!token) {
-        next(new UserFacingError(`Bad request`, 400));
+        next(new UserFacingError(`Access denied`, 401));
     } else {
         verifyAuthToken(token)
             .then(function (payload) {
@@ -133,17 +133,15 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                 if (error.name === 'TokenExpiredError') {
                     next(new UserFacingError(`Provided access token has expired`, 401));
                 } else {
-                    console.error(
-                        `[${new Date(Date.now()).toUTCString()}] - ${error.name}: ${error.message}`
-                    );
                     next(new ApplicationError(`Failed to verify media authorization token`));
                 }
             });
     }
 });
 
-router.use('/artwork', require('./artworkRouter'));
 router.use('/auth', require('./authRouter'));
+router.use('/detail', require('./detailRouter'));
+router.use('/discovery', require('./discoveryRouter'));
 router.use('/management', require('./mgmtRouter'));
 
 router.all('*', function (req, res, next) {

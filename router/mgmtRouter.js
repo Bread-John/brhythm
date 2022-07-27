@@ -35,6 +35,61 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                 next(new UserFacingError(`Uploaded file is not accepted`, 400));
             }
 
+            const [artist, ] = await Artist.findOrCreate({
+                where: { name: TPE1 || 'Unnamed Artist' },
+                transaction: t
+            });
+
+            async function createAlbumArtist() {
+                if (TPE2 && TPE2 !== TPE1) {
+                    return await Artist.findOrCreate({
+                        where: { name: TPE2 },
+                        transaction: t
+                    });
+                } else {
+                    return [artist, false];
+                }
+            }
+            const [albumArtist, ] = await createAlbumArtist();
+
+            const description = await getAlbumDesc(TALB, TPE2 ? TPE2 : TPE1);
+            const coverImg = await getCoverArt(TALB, TPE2 ? TPE2 : TPE1);
+            const [album, ] = await Album.findOrCreate({
+                where: {
+                    title: TALB || 'Untitled',
+                    artistId: albumArtist.id
+                },
+                defaults: {
+                    genre: TCON,
+                    releaseYear: TYER,
+                    releaseDate: null,
+                    totalTrackNo: totalTrackNo,
+                    totalDiscNo: totalDiscNo,
+                    publisher: TPUB,
+                    description,
+                    coverImg
+                },
+                transaction: t
+            });
+
+            const [song, ] = await Song.findOrCreate({
+                where: {
+                    title: TIT2 || 'Untitled',
+                    albumId: album.id,
+                    artistId: artist.id,
+                    ownerId: process.env.ADMIN_ACCOUNT_ID
+                },
+                defaults: {
+                    composer: TCOM,
+                    trackNo: trackNo,
+                    discNo: discNo,
+                    duration: duration,
+                    fileName: req.file.originalname,
+                    fileIdentifier: fileIdentifier
+                },
+                transaction: t
+            });
+
             const outputFiles = await convertToHlsLossy(fileIdentifier, req.file.filename);
             for (const file of outputFiles) {
                 const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
@@ -64,60 +119,6 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                         `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
                     );
                 }
-            });
-
-            const [artist, ] = await Artist.findOrCreate({
-                where: { name: TPE1 || 'Unnamed Artist' },
-                transaction: t
-            });
-
-            async function createAlbumArtist() {
-                if (TPE2 && TPE2 !== TPE1) {
-                    return await Artist.findOrCreate({
-                        where: { name: TPE2 },
-                        transaction: t
-                    });
-                } else {
-                    return [artist, false];
-                }
-            }
-            const [albumArtist, ] = await createAlbumArtist();
-
-            const description = await getAlbumDesc(TALB, TPE2 ? TPE2 : TPE1);
-            const coverImg = await getCoverArt(TALB, TPE2 ? TPE2 : TPE1);
-            const [album, ] = await Album.findOrCreate({
-                where: {
-                    title: TALB || 'Untitled',
-                    artistId: albumArtist.id
-                },
-                defaults: {
-                    genre: TCON,
-                    releaseYear: TYER,
-                    totalTrackNo: totalTrackNo,
-                    totalDiscNo: totalDiscNo,
-                    publisher: TPUB,
-                    description,
-                    coverImg
-                },
-                transaction: t
-            });
-
-            const [song, ] = await Song.findOrCreate({
-                where: {
-                    title: TIT2 || 'Untitled',
-                    albumId: album.id,
-                    artistId: artist.id,
-                    ownerId: process.env.ADMIN_ACCOUNT_ID
-                },
-                defaults: {
-                    composer: TCOM,
-                    trackNo: trackNo,
-                    discNo: discNo,
-                    duration: duration,
-                    fileName: req.file.originalname,
-                    fileIdentifier: fileIdentifier
-                },
-                transaction: t
             });
 
             await t.commit();

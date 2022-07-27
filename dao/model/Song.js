@@ -43,6 +43,10 @@ module.exports = function (sequelize) {
             allowNull: false,
             unique: true
         },
+        extIdentifier: {
+            type: DataTypes.STRING,
+            unique: true
+        },
         allowDownload: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -52,6 +56,10 @@ module.exports = function (sequelize) {
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 0
+        },
+        ownerId: {
+            type: DataTypes.STRING,
+            allowNull: false
         }
     }, {
         tableName: 'b_song'
