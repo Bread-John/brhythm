@@ -7,4 +7,4 @@ A carefully crafted music streaming platform back-end API, powered by Node.JS an
 
 ## License
 Copyright &copy; 2022 Bread-John. All Rights Reserved.
-Licensed under Creative Commons Attribution Share Alike 4.0 International (see ["License"](/LICENSE))
+Licensed under Creative Commons Attribution Share Alike 4.0 International (CC-BY-SA-4.0) (see ["License"](/LICENSE) for details)
