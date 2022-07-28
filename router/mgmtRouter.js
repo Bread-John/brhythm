@@ -1,11 +1,11 @@
 const express = require('express');
-const fs = require('fs');
 const nodeID3 = require('node-id3');
 const path = require('path');
 
 const multer = require('../lib/multer');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
+const { cleanUpTempFolder } = require('../util/tempFileCleaner');
 const { analyseMedia, convertToHlsLossy } = require('../util/ffmpeg');
 const { getCoverArt, getAlbumDesc } = require('../util/musicMetadata');
 
@@ -90,36 +90,16 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
                 transaction: t
             });
 
-            const outputFiles = await convertToHlsLossy(fileIdentifier, req.file.filename);
+            const outputFiles = await convertToHlsLossy(req.file.destination, fileIdentifier, req.file.filename);
             for (const file of outputFiles) {
                 const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
                 await uploadFileToParent(req.app.locals.msalClient, file, folderId);
-                fs.unlink(file, function (err) {
-                    if (err) {
-                        console.error(
-                            `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${file}"`
-                        );
-                    } else {
-                        console.log(
-                            `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${file}" has been deleted`
-                        );
-                    }
-                });
             }
 
             const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'source');
             await uploadFileToParent(req.app.locals.msalClient, req.file.path, folderId);
-            fs.unlink(req.file.path, function (err) {
-                if (err) {
-                    console.error(
-                        `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${req.file.path}"`
-                    );
-                } else {
-                    console.log(
-                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
-                    );
-                }
-            });
+
+            await cleanUpTempFolder(req.file.destination);
 
             await t.commit();
 
@@ -130,18 +110,9 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
         } catch (error) {
             await t.rollback();
 
-            fs.unlink(req.file.path, function (err) {
-                if (err) {
-                    console.error(
-                        `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete file at path "${req.file.path}"`
-                    );
-                } else {
-                    console.log(
-                        `[${new Date(Date.now()).toUTCString()}] - FileSys Info: File at path "${req.file.path}" has been deleted`
-                    );
-                }
-                next(error);
-            });
+            await cleanUpTempFolder(req.file.destination);
+
+            next(error);
         }
     }
 });

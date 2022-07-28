@@ -17,11 +17,11 @@ module.exports = {
             });
         });
     },
-    convertToHlsLossy: function (fileIdentifier, fileName) {
+    convertToHlsLossy: function (filePath, fileIdentifier, fileName) {
         return new Promise(function (resolve, reject) {
             const ffmpegCmd = ffmpeg();
             ffmpegCmd
-                .input(`${process.env.TEMP_FILES_PATH}/${fileName}`)
+                .input(`${filePath}/${fileName}`)
                 .noVideo()
                 .format('hls')
                 .audioCodec('libfdk_aac')
@@ -29,16 +29,16 @@ module.exports = {
                 .outputOptions([
                     '-hls_time 10',
                     '-start_number 1',
-                    `-hls_segment_filename ${process.env.TEMP_FILES_PATH}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`,
+                    `-hls_segment_filename ${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`,
                     '-hls_segment_type fmp4',
                     '-hls_flags single_file+independent_segments',
                     '-hls_playlist_type vod'
                 ])
-                .output(`${process.env.TEMP_FILES_PATH}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`)
+                .output(`${filePath}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`)
                 .on('end', function () {
                     const fileArray = [
-                        `${process.env.TEMP_FILES_PATH}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`,
-                        `${process.env.TEMP_FILES_PATH}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`
+                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`,
+                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`
                     ];
                     resolve(fileArray);
                 })
