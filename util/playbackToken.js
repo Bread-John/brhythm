@@ -17,11 +17,11 @@ module.exports = {
     },
     verifyAuthToken: function (token) {
         return new Promise(function (resolve, reject) {
-            jwt.verify(token, process.env.STREAM_TOKEN_SECRET, { algorithm: 'HS512' }, function (err, token) {
+            jwt.verify(token, process.env.STREAM_TOKEN_SECRET, { algorithm: 'HS512' }, function (err, payload) {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(token);
+                    resolve(payload);
                 }
             });
         });
