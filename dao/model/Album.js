@@ -38,6 +38,12 @@ module.exports = function (sequelize) {
             type: DataTypes.TEXT
         }
     }, {
-        tableName: 'b_album'
+        tableName: 'b_album',
+        indexes: [{
+            name: 'index_b_album_trigram',
+            fields: [sequelize.literal('title gin_trgm_ops')],
+            using: 'GIN',
+            concurrently: true
+        }]
     });
 };

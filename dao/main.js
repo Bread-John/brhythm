@@ -15,7 +15,11 @@ module.exports = {
     syncModels: function (forceSync) {
         return new Promise(function (resolve, reject) {
             sequelize.sync({ force: forceSync })
-                .then(function () {
+                .then(async function () {
+                    const [results, ] = await sequelize.query(`SELECT * FROM pg_extension WHERE extname='pg_trgm';`)
+                    if (!results) {
+                        await sequelize.query(`CREATE EXTENSION pg_trgm;`);
+                    }
                     resolve();
                 })
                 .catch(function (err) {

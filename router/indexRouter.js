@@ -19,8 +19,8 @@ router.get('/user', ensureAuthenticated, function (req, res, next) {
     res.status(200).json(req.user);
 });
 
-router.get('/playback', async function (req, res, next) {
-    const { songId } = req.query;
+router.post('/playback', async function (req, res, next) {
+    const { songId } = req.body;
     if (!songId) {
         next(new UserFacingError(`Bad request`, 400));
     } else {
@@ -59,7 +59,7 @@ router.get('/playback', async function (req, res, next) {
                                     keyRedemptionCode: ''
                                 });
                         })
-                        .catch(function (error) {
+                        .catch(function (_) {
                             next(new ApplicationError(`Failed to generate media authorization token`));
                         });
                 }
@@ -84,11 +84,10 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                     next(new UserFacingError(`Access to resource ${resourceName} is not authorized`, 403));
                 } else {
                     const remotePath = `stream/${resourceName}`;
-
-                    const range = req.headers['range'];
-                    if (range) {
-                        getItemByPath(req.app.locals.msalClient, remotePath)
-                            .then(function (info) {
+                    getItemByPath(req.app.locals.msalClient, remotePath)
+                        .then(function (info) {
+                            const range = req.headers['range'];
+                            if (range) {
                                 const [start, end] = parseRange(range, info.size);
                                 if (!validateRange(start, end, info.size)) {
                                     next(new UserFacingError(`Requested range is not inside the resource size`, 416));
@@ -110,23 +109,26 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                                             next(error);
                                         });
                                 }
-                            })
-                            .catch(function (error) {
-                                next(error);
-                            });
-                    } else {
-                        getFileByPath(req.app.locals.msalClient, remotePath)
-                            .then(function (stream) {
-                                const resHeaders = { 'Content-Type': extToMIME(path.extname(resourceName)) };
-                                res.writeHead(200, resHeaders);
-                                stream.pipe(res);
-                                stream.on('error', function (err) { next(err); });
-                                stream.on('end', function () { res.end(); });
-                            })
-                            .catch(function (error) {
-                                next(error);
-                            });
-                    }
+                            } else {
+                                getFileByPath(req.app.locals.msalClient, remotePath)
+                                    .then(function (stream) {
+                                        const resHeaders = {
+                                            'Content-Length': info.size,
+                                            'Content-Type': extToMIME(path.extname(resourceName))
+                                        };
+                                        res.writeHead(200, resHeaders);
+                                        stream.pipe(res);
+                                        stream.on('error', function (err) { next(err); });
+                                        stream.on('end', function () { res.end(); });
+                                    })
+                                    .catch(function (error) {
+                                        next(error);
+                                    });
+                            }
+                        })
+                        .catch(function (error) {
+                            next(error);
+                        });
                 }
             })
             .catch(function (error) {
@@ -140,9 +142,10 @@ router.get('/stream/:resourceName', async function (req, res, next) {
 });
 
 router.use('/auth', require('./authRouter'));
-router.use('/detail', require('./detailRouter'));
 router.use('/discovery', require('./discoveryRouter'));
+router.use('/library', require('./libraryRouter'));
 router.use('/management', require('./mgmtRouter'));
+router.use('/search', require('./searchRouter'));
 
 router.all('*', function (req, res, next) {
     next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));

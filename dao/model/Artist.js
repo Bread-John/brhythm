@@ -22,6 +22,12 @@ module.exports = function (sequelize) {
         }
     }, {
         tableName: 'b_artist',
-        timestamps: false
+        timestamps: false,
+        indexes: [{
+            name: 'index_b_artist_trigram',
+            fields: [sequelize.literal('name gin_trgm_ops')],
+            using: 'GIN',
+            concurrently: true
+        }]
     });
 };
