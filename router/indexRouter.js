@@ -28,41 +28,39 @@ router.post('/playback', async function (req, res, next) {
             const song = await Song.findByPk(songId, { include: [Album, Artist] });
             if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
+            } else if (song.visibility === '1' && !req.isAuthenticated()) {
+                next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
             } else {
-                if (song.visibility === '1' && !req.isAuthenticated()) {
-                    next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
-                } else {
-                    await Song.increment('playCount', { where: { id: song.id } });
+                await Song.increment('playCount', { where: { id: song.id } });
 
-                    const songInfo = {
-                        title: song.title,
-                        artist: { id: song.Artist.id, name: song.Artist.name },
-                        album: { id: song.Album.id, title: song.Album.title, coverArt: song.Album.coverImg },
-                        duration: song.duration
-                    };
+                const songInfo = {
+                    title: song.title,
+                    artist: { id: song.Artist.id, name: song.Artist.name },
+                    album: { id: song.Album.id, title: song.Album.title, coverArt: song.Album.coverImg },
+                    duration: song.duration
+                };
 
-                    // Token set to expire in the duration of the song, plus a grace period of 5sec
-                    const tokenExpiration = Math.floor(song.duration) + 5;
-                    generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
-                        .then(function (token) {
-                            res
-                                .status(200)
-                                .cookie('brhythm-acsgrt', token, {
-                                    httpOnly: true,
-                                    maxAge: 60 * 60 * 1000,
-                                    path: '/stream',
-                                    secure: process.env.CURRENT_ENV !== 'dev'
-                                })
-                                .json({
-                                    mediaInfo: songInfo,
-                                    contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
-                                    keyRedemptionCode: ''
-                                });
-                        })
-                        .catch(function (_) {
-                            next(new ApplicationError(`Failed to generate media authorization token`));
-                        });
-                }
+                // Token set to expire in the duration of the song, plus a grace period of 5sec
+                const tokenExpiration = Math.floor(song.duration) + 5;
+                generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
+                    .then(function (token) {
+                        res
+                            .status(200)
+                            .cookie('brhythm-acsgrt', token, {
+                                httpOnly: true,
+                                maxAge: 60 * 60 * 1000,
+                                path: '/stream',
+                                secure: process.env.CURRENT_ENV !== 'dev'
+                            })
+                            .json({
+                                mediaInfo: songInfo,
+                                contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                                keyRedemptionCode: ''
+                            });
+                    })
+                    .catch(function (_) {
+                        next(new ApplicationError(`Failed to generate media authorization token`));
+                    });
             }
         } catch (error) {
             next(error);
@@ -143,7 +141,7 @@ router.get('/stream/:resourceName', async function (req, res, next) {
 
 router.use('/auth', require('./authRouter'));
 router.use('/discovery', require('./discoveryRouter'));
-router.use('/library', require('./libraryRouter'));
+router.use('/library', require('./libRouter'));
 router.use('/management', require('./mgmtRouter'));
 router.use('/search', require('./searchRouter'));
 
