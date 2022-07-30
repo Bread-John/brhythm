@@ -15,7 +15,7 @@ router.get('/', function (req, res) {
     res.status(418).json({ message: 'Could not brew coffee with a teapot 🫖' });
 });
 
-router.get('/user', ensureAuthenticated, function (req, res, next) {
+router.get('/user', ensureAuthenticated, function (req, res) {
     res.status(200).json(req.user);
 });
 
@@ -143,6 +143,7 @@ router.use('/auth', require('./authRouter'));
 router.use('/discovery', require('./discoveryRouter'));
 router.use('/library', require('./libRouter'));
 router.use('/management', require('./mgmtRouter'));
+router.use('/playlist', require('./playlistRouter'));
 router.use('/search', require('./searchRouter'));
 
 router.all('*', function (req, res, next) {
