@@ -50,6 +50,7 @@ router.post('/playback', async function (req, res, next) {
                                 httpOnly: true,
                                 maxAge: 60 * 60 * 1000,
                                 path: '/stream',
+                                sameSite: process.env.CURRENT_ENV !== 'dev' ? 'none' : false,
                                 secure: process.env.CURRENT_ENV !== 'dev'
                             })
                             .json({

@@ -45,6 +45,7 @@ app.use(cookieParser());
 
 app.use(session({
     cookie: {
+        sameSite: process.env.CURRENT_ENV !== 'dev' ? 'none' : false,
         secure: process.env.CURRENT_ENV !== 'dev',
         maxAge: 86400000
     },
