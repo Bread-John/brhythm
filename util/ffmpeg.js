@@ -2,8 +2,8 @@ const ffmpeg = require('fluent-ffmpeg');
 
 // Note: These 2 lines below are required for running on Windows systems
 // Set the corresponding entry to the absolute path to the ffmpeg & ffprobe executable files
-ffmpeg.setFfmpegPath('D:/Program\ Files/ffmpeg/bin/ffmpeg.exe');
-ffmpeg.setFfprobePath('D:/Program\ Files/ffmpeg/bin/ffprobe.exe');
+//ffmpeg.setFfmpegPath('D:/Program\ Files/ffmpeg/bin/ffmpeg.exe');
+//ffmpeg.setFfprobePath('D:/Program\ Files/ffmpeg/bin/ffprobe.exe');
 
 module.exports = {
     analyseMedia: function (filePath) {
