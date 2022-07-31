@@ -3,6 +3,7 @@ const nodeID3 = require('node-id3');
 const path = require('path');
 
 const multer = require('../lib/multer');
+const { ensureAuthenticatedAsAdmin } = require('../lib/passport');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
 const { cleanUpTempFolder } = require('../util/tempFileCleaner');
@@ -14,7 +15,7 @@ const { Artist, Album, Song } = require('../dao/config').models;
 
 const router = express.Router();
 
-router.post('/upload', multer.single('media'), async function (req, res, next) {
+router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async function (req, res, next) {
     if (!req.file) {
         next(new UserFacingError(`Uploaded file is not accepted`, 400));
     } else {
@@ -118,7 +119,7 @@ router.post('/upload', multer.single('media'), async function (req, res, next) {
 });
 
 router.get('/download', function (req, res, next) {
-    res.status(200).send('');
+    res.status(200).send('Not implemented');
 });
 
 router.all('*', function (req, res, next) {

@@ -1,5 +1,7 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 
+const { ensureAuthenticated } = require('../lib/passport');
 const { UserFacingError } = require('../lib/customError');
 
 const { newTransaction } = require('../dao/main');
@@ -58,64 +60,75 @@ router.get('/', async function (req, res, next) {
     }
 });
 
-router.post('/create', function (req, res, next) {
-    const allowedParam = ['0', '1', '2'];
-    const { name, description, coverImg, visibility } = req.body;
-    if (!name || name.length < 2 || !allowedParam.includes(visibility)) {
-        next(new UserFacingError(`Bad request`, 400));
-    } else {
-        Playlist
-            .create({
-                name: name,
-                description: description,
-                coverImg: coverImg,
-                visibility: visibility,
-                creatorId: '06ba267e-06b2-4517-b26e-d8cb9acb9ffd'
-            })
-            .then(function (playlist) {
-                res.status(201).json({ message: `Playlist (${playlist.name}) has been created` });
-            })
-            .catch(function (error) {
-                next(error);
-            });
+router.post('/create',
+    ensureAuthenticated,
+    body('name').isLength({ min: 2, max: 50 }),
+    body('description').isLength({ max: 300 }),
+    body('visibility').matches(/^[0-2]$/),
+    function (req, res, next) {
+        const { name, description, coverImg, visibility } = req.body;
+        if (!validationResult(req).isEmpty()) {
+            next(new UserFacingError(`Bad request`, 400));
+        } else {
+            Playlist
+                .create({
+                    name: name,
+                    description: description,
+                    coverImg: coverImg,
+                    visibility: visibility,
+                    creatorId: '06ba267e-06b2-4517-b26e-d8cb9acb9ffd'
+                })
+                .then(function (playlist) {
+                    res.status(201).json({ message: `Playlist (${playlist.name}) has been created` });
+                })
+                .catch(function (error) {
+                    next(error);
+                });
+        }
     }
-});
+);
 
-router.post('/edit', function (req, res, next) {
-    //const allowedParam = ['0', '1', '2'];
-    const { playlistId, name, description, coverImg, visibility } = req.body;
-    if (!playlistId) {
-        next(new UserFacingError(`Bad request`, 400));
-    } else {
-        Playlist
-            .findByPk(playlistId)
-            .then(function (playlist) {
-                if (!playlist) {
-                    next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
-                /**} else if (playlist.creatorId !== req.user.id) {
-                    next(new UserFacingError(`Playlists created by others cannot be modified`, 400));**/
-                } else {
-                    playlist.name = name ? name : playlist.name;
-                    playlist.description = description ? description : playlist.description;
-                    playlist.coverImg = coverImg ? coverImg : playlist.coverImg;
-                    playlist.visibility = visibility ? visibility : playlist.visibility;
-                    playlist
-                        .save()
-                        .then(function () {
-                            res.status(200).json({ message: `Playlist (${playlist.name}) has been modified` });
-                        })
-                        .catch(function (error) {
-                            next(error);
-                        });
-                }
-            })
-            .catch(function (error) {
-                next(error);
-            });
+router.post('/edit',
+    ensureAuthenticated,
+    body('playlistId').notEmpty(),
+    body('name').if(body('name').notEmpty()).isLength({ min: 2, max: 50 }),
+    body('description').isLength({ max: 300 }),
+    body('visibility').if(body('visibility').notEmpty()).matches(/^[0-2]$/),
+    function (req, res, next) {
+        const { playlistId, name, description, coverImg, visibility } = req.body;
+        if (!validationResult(req).isEmpty()) {
+            next(new UserFacingError(`Bad request`, 400));
+        } else {
+            Playlist
+                .findByPk(playlistId)
+                .then(function (playlist) {
+                    if (!playlist) {
+                        next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
+                    } else if (playlist.creatorId !== req.user.id) {
+                        next(new UserFacingError(`Playlists created by others cannot be modified`, 400));
+                    } else {
+                        playlist.name = name ? name : playlist.name;
+                        playlist.description = description ? description : playlist.description;
+                        playlist.coverImg = coverImg ? coverImg : playlist.coverImg;
+                        playlist.visibility = visibility ? visibility : playlist.visibility;
+                        playlist
+                            .save()
+                            .then(function () {
+                                res.status(200).json({ message: `Playlist (${playlist.name}) has been modified` });
+                            })
+                            .catch(function (error) {
+                                next(error);
+                            });
+                    }
+                })
+                .catch(function (error) {
+                    next(error);
+                });
+        }
     }
-});
+);
 
-router.post('/delete', function (req, res, next) {
+router.post('/delete', ensureAuthenticated, function (req, res, next) {
     const { playlistId } = req.body;
     if (!playlistId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -125,8 +138,8 @@ router.post('/delete', function (req, res, next) {
             .then(function (playlist) {
                 if (!playlist) {
                     next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
-                /**} else if (playlist.creatorId !== req.user.id) {
-                    next(new UserFacingError(`Playlists created by others cannot be deleted`, 400));**/
+                } else if (playlist.creatorId !== req.user.id) {
+                    next(new UserFacingError(`Playlists created by others cannot be deleted`, 400));
                 } else {
                     Playlist
                         .destroy({ where: { id: playlistId } })
@@ -144,7 +157,7 @@ router.post('/delete', function (req, res, next) {
     }
 });
 
-router.post('/add', async function (req, res, next) {
+router.post('/add', ensureAuthenticated, async function (req, res, next) {
     const { playlistId, songId } = req.body;
     if (!playlistId || !songId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -157,8 +170,8 @@ router.post('/add', async function (req, res, next) {
                 next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
             } else if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
-                /**} else if (playlist.creatorId !== req.user.id) {
-                next(new UserFacingError(`Adding items to playlists created by others is not allowed`, 400));**/
+            } else if (playlist.creatorId !== req.user.id) {
+                next(new UserFacingError(`Adding items to playlists created by others is not allowed`, 400));
             } else {
                 await Playlist.increment('itemCount', { where: { id: playlistId }, transaction: t });
                 await playlist.addSong(song, { transaction: t });
@@ -175,7 +188,7 @@ router.post('/add', async function (req, res, next) {
     }
 });
 
-router.post('/remove', async function (req, res, next) {
+router.post('/remove', ensureAuthenticated, async function (req, res, next) {
     const { playlistId, songId } = req.body;
     if (!playlistId || !songId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -188,8 +201,8 @@ router.post('/remove', async function (req, res, next) {
                 next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
             } else if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
-                /**} else if (playlist.creatorId !== req.user.id) {
-                next(new UserFacingError(`Removing items from playlists created by others is not allowed`, 400));**/
+            } else if (playlist.creatorId !== req.user.id) {
+                next(new UserFacingError(`Removing items from playlists created by others is not allowed`, 400));
             } else {
                 await Playlist.decrement('itemCount', { where: { id: playlistId }, transaction: t });
                 await playlist.removeSong(song, { transaction: t });
