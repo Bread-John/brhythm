@@ -1,9 +1,9 @@
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
 const ffmpeg = require('fluent-ffmpeg');
 
-// Note: These 2 lines below are required for running on Windows systems
-// Set the corresponding entry to the absolute path to the ffmpeg & ffprobe executable files
-//ffmpeg.setFfmpegPath('D:/Program\ Files/ffmpeg/bin/ffmpeg.exe');
-//ffmpeg.setFfprobePath('D:/Program\ Files/ffmpeg/bin/ffprobe.exe');
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 module.exports = {
     analyseMedia: function (filePath) {
@@ -24,7 +24,7 @@ module.exports = {
                 .input(`${filePath}/${fileName}`)
                 .noVideo()
                 .format('hls')
-                .audioCodec('libfdk_aac')
+                .audioCodec('aac')
                 .audioBitrate('256k')
                 .outputOptions([
                     '-hls_time 10',
