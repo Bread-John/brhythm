@@ -44,20 +44,12 @@ router.post('/playback', async function (req, res, next) {
                 const tokenExpiration = Math.floor(song.duration) + 5;
                 generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
                     .then(function (token) {
-                        res
-                            .status(200)
-                            .cookie('brhythm-acsgrt', token, {
-                                httpOnly: true,
-                                maxAge: 60 * 60 * 1000,
-                                path: '/stream',
-                                sameSite: process.env.CURRENT_ENV !== 'dev' ? 'none' : false,
-                                secure: process.env.CURRENT_ENV !== 'dev'
-                            })
-                            .json({
-                                mediaInfo: songInfo,
-                                contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
-                                keyRedemptionCode: ''
-                            });
+                        res.status(200).json({
+                            mediaInfo: songInfo,
+                            contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                            accessGrantToken: token,
+                            keyAcquisitionToken: ''
+                        });
                     })
                     .catch(function (_) {
                         next(new ApplicationError(`Failed to generate media authorization token`));
