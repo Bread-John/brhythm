@@ -34,6 +34,12 @@ module.exports = function (sequelize) {
             defaultValue: 0
         }
     }, {
-        tableName: 'b_playlist'
+        tableName: 'b_playlist',
+        indexes: [{
+            name: 'index_b_playlist_trigram',
+            fields: [sequelize.literal('name gin_trgm_ops')],
+            using: 'GIN',
+            concurrently: true
+        }]
     });
 };
