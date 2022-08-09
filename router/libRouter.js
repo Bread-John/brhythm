@@ -29,7 +29,8 @@ router.get('/album',
             Album
                 .findAll({
                     include: [Artist],
-                    attributes: { exclude: ['createdAt', 'updatedAt'] },
+                    attributes: { exclude: ['description', 'createdAt', 'updatedAt'] },
+                    order: [[Artist, 'name', 'ASC']],
                     limit: limit ? limit: 20,
                     offset: offset ? offset : 0
                 })
@@ -89,7 +90,12 @@ router.get('/artist',
                 });
         } else if (validationResult(req).isEmpty()) {
             Artist
-                .findAll({ limit: limit ? limit : 20, offset: offset ? offset : 0 })
+                .findAll({
+                    attributes: { exclude: ['introduction'] },
+                    order: [['name', 'ASC']],
+                    limit: limit ? limit : 20,
+                    offset: offset ? offset : 0
+                })
                 .then(function (artistSet) {
                     res.status(200).json(artistSet);
                 })
