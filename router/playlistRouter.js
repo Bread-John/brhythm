@@ -49,7 +49,7 @@ router.get('/',
             Playlist
                 .findAll({
                     where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
-                    attributes: { exclude: ['description', 'visibility', 'creatorId'] },
+                    attributes: { exclude: ['description', 'visibility'] },
                     order: [['updatedAt', 'DESC']],
                     limit: limit ? limit : 20,
                     offset: offset ? offset : 0

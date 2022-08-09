@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const { UserFacingError } = require('../lib/customError');
 
 const sequelize = require('../dao/config');
-const { Album, Artist, Song } = require('../dao/config').models;
+const { Album, Artist, Playlist, Song } = require('../dao/config').models;
 
 const router = express.Router();
 
@@ -54,7 +54,28 @@ router.get('/artist', function (req, res, next) {
 });
 
 router.get('/playlist', function (req, res, next) {
-    res.status(204).json({});
+    const { q } = req.query;
+    if (q.length < 2) {
+        next(new UserFacingError(`Query string must be at least 2 characters long`, 400));
+    } else {
+        Playlist
+            .findAll({
+                attributes: ['id', 'name', 'creatorId'],
+                where: {
+                    [Op.and]: [
+                        sequelize.where(sequelize.fn('similarity', sequelize.col('Song.title'), q), { [Op.gt]: 0.1 }),
+                        { visibility: req.isAuthenticated() ? [0, 1] : 0 }
+                    ]
+                },
+                order: [[sequelize.fn('similarity', sequelize.col('name'), q), 'DESC']]
+            })
+            .then(function (result) {
+                res.status(200).json(result);
+            })
+            .catch(function (error) {
+                next(error);
+            });
+    }
 });
 
 router.get('/song', function (req, res, next) {
@@ -81,7 +102,7 @@ router.get('/song', function (req, res, next) {
 });
 
 router.get('/user', function (req, res, next) {
-    res.status(204).json({});
+    res.status(204).json({ error: 'Not implemented' });
 });
 
 router.all('*', function (req, res, next) {
