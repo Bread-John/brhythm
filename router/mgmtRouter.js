@@ -15,7 +15,7 @@ const { Artist, Album, Song } = require('../dao/config').models;
 
 const router = express.Router();
 
-router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async function (req, res, next) {
+router.post('/upload', /*ensureAuthenticatedAsAdmin,*/ multer.single('media'), async function (req, res, next) {
     const { visibility } = req.body;
     if (!req.file) {
         next(new UserFacingError(`Uploaded file is not accepted`, 400));
