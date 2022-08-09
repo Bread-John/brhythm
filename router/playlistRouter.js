@@ -1,5 +1,5 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
+const { body, query, validationResult } = require('express-validator');
 
 const { ensureAuthenticated } = require('../lib/passport');
 const { UserFacingError } = require('../lib/customError');
@@ -9,56 +9,62 @@ const { Album, Artist, Playlist, PlaylistSong, Song, User } = require('../dao/co
 
 const router = express.Router();
 
-router.get('/', async function (req, res, next) {
-    const { playlistId, limit, offset } = req.query;
-    if (playlistId) {
-        try {
-            const playlist = await Playlist.findByPk(playlistId, {
-                include: [{
-                    model: Song,
-                    through: { attributes: [] },
-                    include: [
-                        { model: Album, attributes: ['id', 'title', 'coverImg'] },
-                        { model: Artist, attributes: ['id', 'name'] }
-                    ],
-                    attributes: ['id', 'title', 'duration', 'isExplicit', 'allowDownload']
-                }, {
-                    model: User,
-                    attributes: ['id', 'displayName', 'profileImg']
-                }],
-                attributes: { exclude: ['creatorId'] },
-                order: [[Song, PlaylistSong, 'createdAt']]
-            });
-            if (!playlist) {
-                next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
-            } else if (playlist.visibility === 1 && !req.isAuthenticated()) {
-                next(new UserFacingError(`Access to playlist of ID ${playlistId} is restricted to organisation users only`, 403));
-            } else if (playlist.visibility === 2 && playlist.creatorId !== req.user.id) {
-                // Not disclose any information on private playlists
-                next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
-            } else {
-                res.status(200).json(playlist);
-            }
-        } catch (error) {
-            next(error);
-        }
-    } else {
-        Playlist
-            .findAll({
-                where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
-                attributes: { exclude: ['description', 'visibility', 'creatorId'] },
-                order: [['updatedAt', 'DESC']],
-                limit: limit && limit <= 40 ? limit : 20,
-                offset: offset ? offset : 0
-            })
-            .then(function (playlistSet) {
-                res.status(200).json(playlistSet);
-            })
-            .catch(function (error) {
+router.get('/',
+    query('limit').if(query('limit').notEmpty()).isInt({ min: 1, max: 40 }),
+    query('offset').if(query('offset').notEmpty()).isInt({ min: 0 }),
+    async function (req, res, next) {
+        const { playlistId, limit, offset } = req.query;
+        if (playlistId) {
+            try {
+                const playlist = await Playlist.findByPk(playlistId, {
+                    include: [{
+                        model: Song,
+                        through: { attributes: [] },
+                        include: [
+                            { model: Album, attributes: ['id', 'title', 'coverImg'] },
+                            { model: Artist, attributes: ['id', 'name'] }
+                        ],
+                        attributes: ['id', 'title', 'duration', 'isExplicit', 'allowDownload']
+                    }, {
+                        model: User,
+                        attributes: ['id', 'displayName', 'profileImg']
+                    }],
+                    attributes: { exclude: ['creatorId'] },
+                    order: [[Song, PlaylistSong, 'createdAt']]
+                });
+                if (!playlist) {
+                    next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
+                } else if (playlist.visibility === 1 && !req.isAuthenticated()) {
+                    next(new UserFacingError(`Access to playlist of ID ${playlistId} is restricted to organisation users only`, 403));
+                } else if (playlist.visibility === 2 && playlist.creatorId !== req.user.id) {
+                    // Not disclose any information on private playlists
+                    next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
+                } else {
+                    res.status(200).json(playlist);
+                }
+            } catch (error) {
                 next(error);
-            });
+            }
+        } else if (validationResult(req).isEmpty()) {
+            Playlist
+                .findAll({
+                    where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
+                    attributes: { exclude: ['description', 'visibility', 'creatorId'] },
+                    order: [['updatedAt', 'DESC']],
+                    limit: limit ? limit : 20,
+                    offset: offset ? offset : 0
+                })
+                .then(function (playlistSet) {
+                    res.status(200).json(playlistSet);
+                })
+                .catch(function (error) {
+                    next(error);
+                });
+        } else {
+            next(new UserFacingError(`Bad request`, 400));
+        }
     }
-});
+);
 
 router.post('/create',
     ensureAuthenticated,
