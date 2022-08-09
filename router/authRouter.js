@@ -9,20 +9,20 @@ router.get('/signin',
     function (req, res, next) {
         passport.authenticate('azuread-openidconnect', {
             response: res,
-            failureRedirect: process.env.TRUSTED_DOMAIN
+            failureRedirect: `${process.env.TRUSTED_DOMAIN}`
         })(req, res, next);
     }, function (req, res) {
-        res.redirect(`${process.env.TRUSTED_DOMAIN}/user`);
+        res.redirect(`${process.env.TRUSTED_DOMAIN}`);
 });
 
 router.post('/callback',
     function (req, res, next) {
         passport.authenticate('azuread-openidconnect', {
             response: res,
-            failureRedirect: process.env.TRUSTED_DOMAIN
+            failureRedirect: `${process.env.TRUSTED_DOMAIN}`
         })(req, res, next);
     }, function (req, res) {
-    res.redirect(`${process.env.TRUSTED_DOMAIN}/user`);
+    res.redirect(`${process.env.TRUSTED_DOMAIN}`);
 });
 
 router.get('/signout', function (req, res, next) {
@@ -30,7 +30,7 @@ router.get('/signout', function (req, res, next) {
         if (error) {
             next(error);
         } else {
-            res.redirect(process.env.TRUSTED_DOMAIN);
+            res.redirect(`${process.env.TRUSTED_DOMAIN}`);
         }
     })
 });
