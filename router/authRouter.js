@@ -12,7 +12,7 @@ router.get('/signin',
             failureRedirect: `${process.env.TRUSTED_DOMAIN}`
         })(req, res, next);
     }, function (req, res) {
-        res.redirect(`${process.env.TRUSTED_DOMAIN}`);
+        res.redirect(`${process.env.TRUSTED_DOMAIN}/signin`);
 });
 
 router.post('/callback',
@@ -22,7 +22,7 @@ router.post('/callback',
             failureRedirect: `${process.env.TRUSTED_DOMAIN}`
         })(req, res, next);
     }, function (req, res) {
-    res.redirect(`${process.env.TRUSTED_DOMAIN}`);
+    res.redirect(`${process.env.TRUSTED_DOMAIN}/signin`);
 });
 
 router.get('/signout', function (req, res, next) {
@@ -30,7 +30,7 @@ router.get('/signout', function (req, res, next) {
         if (error) {
             next(error);
         } else {
-            res.redirect(`${process.env.TRUSTED_DOMAIN}`);
+            res.redirect(`${process.env.TRUSTED_DOMAIN}/signout`);
         }
     })
 });

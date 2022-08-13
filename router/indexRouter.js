@@ -28,8 +28,8 @@ router.post('/playback', async function (req, res, next) {
             const song = await Song.findByPk(songId, { include: [Album, Artist] });
             if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
-            /*} else if (song.visibility === 1 && !req.isAuthenticated()) {
-                next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));*/
+            } else if (song.visibility === 1 && !req.isAuthenticated()) {
+                next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
             } else {
                 await Song.increment('playCount', { where: { id: song.id } });
 
