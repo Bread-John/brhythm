@@ -5,6 +5,7 @@
  */
 
 const http = require('http');
+const fs = require('fs');
 const app = require('../app');
 
 /**
@@ -87,3 +88,28 @@ function onListening() {
 
     console.log(`[${new Date(Date.now()).toUTCString()}] - HTTP server Info: Listening on ${bind}`);
 }
+
+/**
+ * Event listener for Node runtime "SIGINT" event.
+ */
+
+process.on('SIGINT', function() {
+    fs.rm(process.env.TEMP_FILES_PATH, { maxRetries: 3, recursive: true }, function (err) {
+        if (err && err.code === 'ENOENT') {
+            console.info(
+                `[${new Date(Date.now()).toUTCString()}] - FileSys Info: Deletion of temporary folder was skipped`
+            );
+            process.exit(0);
+        } else if (err) {
+            console.error(
+                `[${new Date(Date.now()).toUTCString()}] - FileSys Error: Failed to delete temporary folder`
+            );
+            process.exit(1);
+        } else {
+            console.info(
+                `[${new Date(Date.now()).toUTCString()}] - FileSys Info: Temporary folder has been deleted`
+            );
+            process.exit(0);
+        }
+    });
+});
