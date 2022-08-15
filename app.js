@@ -45,6 +45,7 @@ app.use(cookieParser());
 
 app.use(session({
     cookie: {
+        domain: process.env.COOKIE_DOMAIN,
         httpOnly: true,
         sameSite: process.env.CURRENT_ENV !== 'dev' ? 'none' : false,
         secure: process.env.CURRENT_ENV !== 'dev',
