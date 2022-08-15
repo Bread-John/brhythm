@@ -46,7 +46,7 @@ router.post('/playback', async function (req, res, next) {
                     .then(function (token) {
                         res.status(200).json({
                             mediaInfo: songInfo,
-                            contentUrl: `${process.env.HOSTNAME}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                            contentUrl: `${process.env.API_DOMAIN}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
                             accessGrantToken: token,
                             keyAcquisitionToken: ''
                         });
