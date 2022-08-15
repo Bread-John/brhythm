@@ -29,7 +29,7 @@ router.post('/playback', async function (req, res, next) {
             if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
             } else if (song.visibility === 1 && !req.isAuthenticated()) {
-                next(new UserFacingError(`Access to music of ID ${songId} is restricted to organisation users only`, 403));
+                next(new UserFacingError(`Access to this track is restricted to internal users only`, 403));
             } else {
                 await Song.increment('playCount', { where: { id: song.id } });
 

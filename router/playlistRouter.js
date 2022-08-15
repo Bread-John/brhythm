@@ -11,9 +11,9 @@ const router = express.Router();
 
 router.get('/',
     query('limit').if(query('limit').notEmpty()).isInt({ min: 1, max: 40 }),
-    query('offset').if(query('offset').notEmpty()).isInt({ min: 0 }),
+    query('page').if(query('page').notEmpty()).isInt({ min: 1 }),
     async function (req, res, next) {
-        const { playlistId, limit, offset } = req.query;
+        const { playlistId } = req.query;
         if (playlistId) {
             try {
                 const playlist = await Playlist.findByPk(playlistId, {
@@ -46,20 +46,37 @@ router.get('/',
                 next(error);
             }
         } else if (validationResult(req).isEmpty()) {
-            Playlist
-                .findAll({
-                    where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
-                    attributes: { exclude: ['description', 'visibility'] },
-                    order: [['updatedAt', 'DESC']],
-                    limit: limit ? limit : 20,
-                    offset: offset ? offset : 0
-                })
-                .then(function (playlistSet) {
-                    res.status(200).json(playlistSet);
-                })
-                .catch(function (error) {
-                    next(error);
-                });
+            const limit = req.query.limit ? parseInt(req.query.limit) : 40;
+            const page = req.query.page ? parseInt(req.query.page) : 1;
+
+            try {
+                const pageCount = Math.ceil(await Playlist.count() / limit) || 1;
+                if (page > pageCount) {
+                    next(new UserFacingError(`Bad request`, 400));
+                } else {
+                    const playlistSet = await Playlist.findAll({
+                        where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
+                        attributes: { exclude: ['description', 'visibility'] },
+                        order: [['updatedAt', 'DESC']],
+                        limit: limit,
+                        offset: limit * (page - 1)
+                    });
+
+                    res.status(200).json({
+                        playlistSet: playlistSet,
+                        currentPage: page,
+                        totalPages: pageCount,
+                        links: {
+                            prevPage: page !== 1 ? `${req.originalUrl.split('?')[0]}?limit=${limit}&page=${page - 1}` : '',
+                            nextPage: page !== pageCount ? `${req.originalUrl.split('?')[0]}?limit=${limit}&page=${page + 1}` : '',
+                            firstPage: `${req.originalUrl.split('?')[0]}?limit=${limit}&page=1`,
+                            lastPage: `${req.originalUrl.split('?')[0]}?limit=${limit}&page=${pageCount}`
+                        }
+                    });
+                }
+            } catch (error) {
+                next(error);
+            }
         } else {
             next(new UserFacingError(`Bad request`, 400));
         }
