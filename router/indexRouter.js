@@ -94,7 +94,6 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                                             res.writeHead(206, resHeaders);
                                             stream.pipe(res);
                                             stream.on('error', function (err) { next(err); });
-                                            stream.on('end', function () { res.end(); });
                                         })
                                         .catch(function (error) {
                                             next(error);
@@ -110,7 +109,6 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                                         res.writeHead(200, resHeaders);
                                         stream.pipe(res);
                                         stream.on('error', function (err) { next(err); });
-                                        stream.on('end', function () { res.end(); });
                                     })
                                     .catch(function (error) {
                                         next(error);
