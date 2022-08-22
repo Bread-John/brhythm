@@ -8,7 +8,7 @@ const { UserFacingError } = require('../lib/customError');
 const id3tagParser = require('../util/id3tagParser');
 const tempFileCleaner = require('../util/tempFileCleaner');
 const { generateKeyFiles } = require('../util/encryptor');
-const { convertToHlsLossy } = require('../util/ffmpeg');
+const { analyseMedia, convertToHlsLossy } = require('../util/ffmpeg');
 const { getCoverArt, getAlbumDesc } = require('../util/musicMetadata');
 
 const { newTransaction } = require('../dao/main');
@@ -25,6 +25,11 @@ router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async
 
         const t = await newTransaction();
         try {
+            const { duration } = await analyseMedia(req.file.path);
+            if (duration > 60 * 60) {
+                return next(new UserFacingError(`Uploaded file is not accepted`, 400));
+            }
+
             const {
                 title,
                 artist,
