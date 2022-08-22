@@ -4,7 +4,7 @@ const path = require('path');
 const { ensureAuthenticated } = require('../lib/passport');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
 const { ApplicationError, UserFacingError } = require('../lib/customError');
-const { generateAuthToken, verifyAuthToken } = require('../util/playbackToken');
+const { generateAuthToken, generateKeyingToken, verifyAuthToken } = require('../util/playbackToken');
 const { parseRange, validateRange, extToMIME } = require('../util/resHeaders');
 
 const { Album, Artist, Song } = require('../dao/config').models;
@@ -43,13 +43,32 @@ router.post('/playback', async function (req, res, next) {
                 // Token set to expire in the duration of the song, plus a grace period of 5sec
                 const tokenExpiration = Math.floor(song.duration) + 5;
                 generateAuthToken({ fileIdentifier: song.fileIdentifier }, tokenExpiration)
-                    .then(function (token) {
-                        res.status(200).json({
-                            mediaInfo: songInfo,
-                            contentUrl: `${process.env.API_DOMAIN}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
-                            accessGrantToken: token,
-                            keyAcquisitionToken: ''
-                        });
+                    .then(function (mediaToken) {
+                        generateKeyingToken({ fileIdentifier: song.fileIdentifier })
+                            .then(function (keyingToken) {
+                                res.status(200)
+                                    .cookie('b-media-access', mediaToken, {
+                                        domain: process.env.COOKIE_DOMAIN,
+                                        httpOnly: true,
+                                        path: '/stream',
+                                        secure: true
+                                    })
+                                    .cookie('b-key-acquisition', keyingToken, {
+                                        domain: process.env.COOKIE_DOMAIN,
+                                        httpOnly: true,
+                                        path: '/key',
+                                        secure: true
+                                    })
+                                    .json({
+                                        mediaInfo: songInfo,
+                                        contentUrl: `${process.env.API_DOMAIN}/stream/brhythm_${song.fileIdentifier}_hq_aac_index.m3u8`,
+                                        accessGrantToken: mediaToken,
+                                        keyAcquisitionToken: keyingToken
+                                    });
+                            })
+                            .catch(function (_) {
+                                next(new ApplicationError(`Failed to generate key acquisition token`));
+                            });
                     })
                     .catch(function (_) {
                         next(new ApplicationError(`Failed to generate media authorization token`));
@@ -64,7 +83,7 @@ router.post('/playback', async function (req, res, next) {
 router.get('/stream/:resourceName', async function (req, res, next) {
     const { resourceName } = req.params;
     const [, resourceId] = resourceName.split('_');
-    const token = req.cookies['brhythm-acsgrt'];
+    const token = req.cookies['b-media-access'];
 
     if (!token) {
         next(new UserFacingError(`Access denied`, 401));

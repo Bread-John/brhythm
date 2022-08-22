@@ -47,11 +47,10 @@ app.use(session({
     cookie: {
         domain: process.env.COOKIE_DOMAIN,
         httpOnly: true,
-        sameSite: process.env.CURRENT_ENV !== 'dev' ? 'none' : false,
         secure: process.env.CURRENT_ENV !== 'dev',
-        maxAge: 86400000
+        maxAge: 2 * 24 * 60 * 60 * 1000
     },
-    name: 'brhythm-sid',
+    name: 'b-session-id',
     store: new RedisStore({ client: redisClient }),
     saveUninitialized: false,
     secret: process.env.SESSION_SECRET,
