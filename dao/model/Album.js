@@ -28,9 +28,6 @@ module.exports = function (sequelize) {
         totalDiscNo: {
             type: DataTypes.INTEGER
         },
-        publisher: {
-            type: DataTypes.STRING
-        },
         description: {
             type: DataTypes.TEXT
         },

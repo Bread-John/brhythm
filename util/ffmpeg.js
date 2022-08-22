@@ -46,5 +46,34 @@ module.exports = {
                 .on('error', function (err) { reject(err); })
                 .run();
         });
+    },
+    convertToHlsLossless: function (filePath, fileIdentifier, sourceFileName, keyFileName) {
+        return new Promise(function (resolve, reject) {
+            const ffmpegCmd = ffmpeg();
+            ffmpegCmd
+                .input(`${filePath}/${sourceFileName}`)
+                .noVideo()
+                .format('hls')
+                .audioCodec('flac')
+                .outputOptions([
+                    '-hls_time 10',
+                    '-start_number 1',
+                    `-hls_segment_filename ${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`,
+                    `-hls_key_info_file ${filePath}/${keyFileName}`,
+                    '-hls_segment_type fmp4',
+                    '-hls_flags single_file+independent_segments',
+                    '-hls_playlist_type vod'
+                ])
+                .output(`${filePath}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`)
+                .on('end', function () {
+                    const fileArray = [
+                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`,
+                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`
+                    ];
+                    resolve(fileArray);
+                })
+                .on('error', function (err) { reject(err); })
+                .run();
+        });
     }
 };

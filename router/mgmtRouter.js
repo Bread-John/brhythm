@@ -1,14 +1,14 @@
 const express = require('express');
-const nodeID3 = require('node-id3');
 const path = require('path');
 
 const multer = require('../lib/multer');
 const { ensureAuthenticatedAsAdmin } = require('../lib/passport');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
-const { cleanUpTempFolder } = require('../util/tempFileCleaner');
+const id3tagParser = require('../util/id3tagParser');
+const tempFileCleaner = require('../util/tempFileCleaner');
 const { generateKeyFiles } = require('../util/encryptor');
-const { analyseMedia, convertToHlsLossy } = require('../util/ffmpeg');
+const { convertToHlsLossy } = require('../util/ffmpeg');
 const { getCoverArt, getAlbumDesc } = require('../util/musicMetadata');
 
 const { newTransaction } = require('../dao/main');
@@ -23,72 +23,72 @@ router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async
     } else {
         const fileIdentifier = path.basename(req.file.path, path.extname(req.file.path));
 
-        // Details on these tag names are here: https://github.com/Zazama/node-id3#supported-raw-ids
-        const {
-            TIT2, TPE1, TALB, TPE2, TCON,
-            TRCK, TPOS, TCOM, TYER, TPUB
-        } = nodeID3.read(req.file.path, { onlyRaw: true });
-        const [trackNo, totalTrackNo] = TRCK ? TRCK.split('/') : [];
-        const [discNo, totalDiscNo] = TPOS ? TPOS.split('/') : [];
-
         const t = await newTransaction();
         try {
-            const { duration } = await analyseMedia(req.file.path);
-            if (duration > 60 * 60) {
-                next(new UserFacingError(`Uploaded file is not accepted`, 400));
-            }
+            const {
+                title,
+                artist,
+                album,
+                albumArtist,
+                genre,
+                trackNo,
+                totalTrackNo,
+                discNo,
+                totalDiscNo,
+                composer,
+                releaseYear
+            } = await id3tagParser(req.file.path);
 
-            const [artist, ] = await Artist.findOrCreate({
-                where: { name: TPE1 || 'Unnamed Artist' },
+            const [_artist, ] = await Artist.findOrCreate({
+                where: { name: artist || 'Unnamed Artist' },
                 transaction: t
             });
 
             async function createAlbumArtist() {
-                if (TPE2 && TPE2 !== TPE1) {
+                if (albumArtist && albumArtist !== artist) {
                     return await Artist.findOrCreate({
-                        where: { name: TPE2 },
+                        where: { name: albumArtist },
                         transaction: t
                     });
                 } else {
-                    return [artist, false];
+                    return [_artist, false];
                 }
             }
-            const [albumArtist, ] = await createAlbumArtist();
+            const [_albumArtist, ] = await createAlbumArtist();
 
-            const description = await getAlbumDesc(TALB, TPE2 ? TPE2 : TPE1);
-            const coverImg = await getCoverArt(TALB, TPE2 ? TPE2 : TPE1);
-            const [album, ] = await Album.findOrCreate({
+            const description = await getAlbumDesc(album, albumArtist ? albumArtist : artist);
+            const coverImg = await getCoverArt(album, albumArtist ? albumArtist : artist);
+            const [_album, ] = await Album.findOrCreate({
                 where: {
-                    title: TALB || 'Untitled',
-                    artistId: albumArtist.id
+                    title: album || 'Untitled',
+                    artistId: _albumArtist.id
                 },
                 defaults: {
-                    genre: TCON,
-                    releaseYear: TYER,
+                    genre,
+                    releaseYear,
                     releaseDate: null,
-                    totalTrackNo: totalTrackNo,
-                    totalDiscNo: totalDiscNo,
-                    publisher: TPUB,
+                    totalTrackNo,
+                    totalDiscNo,
                     description,
                     coverImg
                 },
                 transaction: t
             });
 
-            const [song, ] = await Song.findOrCreate({
+            const [_song, ] = await Song.findOrCreate({
                 where: {
-                    title: TIT2 || 'Untitled',
-                    albumId: album.id,
-                    artistId: artist.id,
+                    title: title || 'Untitled',
+                    albumId: _album.id,
+                    artistId: _artist.id,
                     ownerId: process.env.ADMIN_ACCOUNT_ID
                 },
                 defaults: {
-                    composer: TCOM,
-                    trackNo: trackNo,
-                    discNo: discNo,
-                    duration: duration,
+                    composer,
+                    trackNo,
+                    discNo,
+                    duration,
                     fileName: req.file.originalname,
-                    fileIdentifier: fileIdentifier,
+                    fileIdentifier,
                     visibility: visibility ? visibility : 1
                 },
                 transaction: t
@@ -112,18 +112,18 @@ router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async
             const { id: sourceFolderId } = await getItemByPath(req.app.locals.msalClient, 'source');
             await uploadFileToParent(req.app.locals.msalClient, req.file.path, sourceFolderId);
 
-            await cleanUpTempFolder(req.file.destination);
+            await tempFileCleaner(req.file.destination);
 
             await t.commit();
 
             res.status(200).json({
                 ack: true,
-                message: `Music (${artist.name} - ${song.title}) has been uploaded`
+                message: `Music (${_song.title}) has been uploaded`
             });
         } catch (error) {
             await t.rollback();
 
-            await cleanUpTempFolder(req.file.destination);
+            await tempFileCleaner(req.file.destination);
 
             next(error);
         }
