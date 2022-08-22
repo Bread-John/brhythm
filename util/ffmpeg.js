@@ -17,20 +17,21 @@ module.exports = {
             });
         });
     },
-    convertToHlsLossy: function (filePath, fileIdentifier, fileName) {
+    convertToHlsLossy: function (filePath, fileIdentifier, sourceFileName, keyFileName) {
         return new Promise(function (resolve, reject) {
             const ffmpegCmd = ffmpeg();
             ffmpegCmd
-                .input(`${filePath}/${fileName}`)
+                .input(`${filePath}/${sourceFileName}`)
                 .noVideo()
                 .format('hls')
-                .audioCodec('aac')
+                .audioCodec('libfdk_aac')
                 .audioBitrate('256k')
                 .outputOptions([
                     '-hls_time 10',
                     '-start_number 1',
-                    `-hls_segment_filename ${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`,
-                    '-hls_segment_type fmp4',
+                    `-hls_segment_filename ${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.ts`,
+                    `-hls_key_info_file ${filePath}/${keyFileName}`,
+                    '-hls_segment_type mpegts',
                     '-hls_flags single_file+independent_segments',
                     '-hls_playlist_type vod'
                 ])
@@ -38,7 +39,7 @@ module.exports = {
                 .on('end', function () {
                     const fileArray = [
                         `${filePath}/brhythm_${fileIdentifier}_hq_aac_index.m3u8`,
-                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.mp4`
+                        `${filePath}/brhythm_${fileIdentifier}_hq_aac_stream.ts`
                     ];
                     resolve(fileArray);
                 })

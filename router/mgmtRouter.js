@@ -7,6 +7,7 @@ const { ensureAuthenticatedAsAdmin } = require('../lib/passport');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
 const { cleanUpTempFolder } = require('../util/tempFileCleaner');
+const { generateKeyFiles } = require('../util/encryptor');
 const { analyseMedia, convertToHlsLossy } = require('../util/ffmpeg');
 const { getCoverArt, getAlbumDesc } = require('../util/musicMetadata');
 
@@ -93,14 +94,23 @@ router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async
                 transaction: t
             });
 
-            const outputFiles = await convertToHlsLossy(req.file.destination, fileIdentifier, req.file.filename);
+            // Generate an encryption key info file as per ffmpeg requirements
+            const { key, keyInfo } = await generateKeyFiles(req.file.destination, fileIdentifier);
+
+            // Transcode the media item into HLS container, and upload to cloud
+            const outputFiles = await convertToHlsLossy(req.file.destination, fileIdentifier, req.file.filename, keyInfo);
             for (const file of outputFiles) {
-                const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
-                await uploadFileToParent(req.app.locals.msalClient, file, folderId);
+                const { id: streamFolderId } = await getItemByPath(req.app.locals.msalClient, 'stream');
+                await uploadFileToParent(req.app.locals.msalClient, file, streamFolderId);
             }
 
-            const { id: folderId } = await getItemByPath(req.app.locals.msalClient, 'source');
-            await uploadFileToParent(req.app.locals.msalClient, req.file.path, folderId);
+            // Upload the encryption key to cloud
+            const { id: keyFolderId } = await getItemByPath(req.app.locals.msalClient, 'key');
+            await uploadFileToParent(req.app.locals.msalClient, key, keyFolderId);
+
+            // Upload the source file to cloud as backup
+            const { id: sourceFolderId } = await getItemByPath(req.app.locals.msalClient, 'source');
+            await uploadFileToParent(req.app.locals.msalClient, req.file.path, sourceFolderId);
 
             await cleanUpTempFolder(req.file.destination);
 

@@ -4,7 +4,7 @@ const path = require('path');
 const { ensureAuthenticated } = require('../lib/passport');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
 const { ApplicationError, UserFacingError } = require('../lib/customError');
-const { generateAuthToken, generateKeyingToken, verifyAuthToken } = require('../util/playbackToken');
+const { generateAuthToken, generateKeyingToken, verifyAuthToken, verifyKeyingToken } = require('../util/playbackToken');
 const { parseRange, validateRange, extToMIME } = require('../util/resHeaders');
 
 const { Album, Artist, Song } = require('../dao/config').models;
@@ -144,6 +144,51 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                     next(new UserFacingError(`Provided access token has expired`, 401));
                 } else {
                     next(new ApplicationError(`Failed to verify media authorization token`));
+                }
+            });
+    }
+});
+
+router.get('/key/:resourceName', async function (req, res, next) {
+    const { resourceName } = req.params;
+    const [, resourceId] = resourceName.split('_');
+    const token = req.cookies['b-key-acquisition'];
+
+    if (!token) {
+        next(new UserFacingError(`Access denied`, 401));
+    } else {
+        verifyKeyingToken(token)
+            .then(function (payload) {
+                if (payload.fileIdentifier !== resourceId) {
+                    next(new UserFacingError(`Access to the decryption key of ${resourceName} is not authorized`, 403));
+                } else {
+                    const remotePath = `key/${resourceName}`;
+                    getItemByPath(req.app.locals.msalClient, remotePath)
+                        .then(function (info) {
+                            getFileByPath(req.app.locals.msalClient, remotePath)
+                                .then(function (stream) {
+                                    const resHeaders = {
+                                        'Content-Length': info.size,
+                                        'Content-Type': extToMIME(path.extname(resourceName))
+                                    };
+                                    res.writeHead(200, resHeaders);
+                                    stream.pipe(res);
+                                    stream.on('error', function (err) { next(err); });
+                                })
+                                .catch(function (error) {
+                                    next(error);
+                                });
+                        })
+                        .catch(function (error) {
+                            next(error);
+                        });
+                }
+            })
+            .catch(function (error) {
+                if (error.name === 'TokenExpiredError') {
+                    next(new UserFacingError(`Provided keying token has expired`, 401));
+                } else {
+                    next(new ApplicationError(`Failed to verify key acquisition token`));
                 }
             });
     }
