@@ -13,7 +13,7 @@ router.get('/',
     query('limit').if(query('limit').notEmpty()).isInt({ min: 1, max: 40 }),
     query('page').if(query('page').notEmpty()).isInt({ min: 1 }),
     async function (req, res, next) {
-        const { playlistId } = req.query;
+        const { playlistId, userId } = req.query;
         if (playlistId) {
             try {
                 const playlist = await Playlist.findByPk(playlistId, {
@@ -42,6 +42,21 @@ router.get('/',
                 } else {
                     res.status(200).json(playlist);
                 }
+            } catch (error) {
+                next(error);
+            }
+        } else if (userId && userId === req.user.id) {
+            const limit = req.query.limit ? parseInt(req.query.limit) : 3;
+
+            try {
+                const playlistSet = await Playlist.findAll({
+                    where: { creatorId: userId },
+                    attributes: { exclude: ['description', 'visibility'] },
+                    order: [['updatedAt', 'DESC']],
+                    limit: limit
+                });
+
+                res.status(200).json(playlistSet);
             } catch (error) {
                 next(error);
             }
