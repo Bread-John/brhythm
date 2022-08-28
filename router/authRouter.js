@@ -13,7 +13,8 @@ router.get('/signin',
         })(req, res, next);
     }, function (req, res) {
         res.redirect(`${process.env.TRUSTED_DOMAIN}/signin`);
-});
+    }
+);
 
 router.post('/callback',
     function (req, res, next) {
@@ -22,8 +23,9 @@ router.post('/callback',
             failureRedirect: `${process.env.TRUSTED_DOMAIN}`
         })(req, res, next);
     }, function (req, res) {
-    res.redirect(`${process.env.TRUSTED_DOMAIN}/signin`);
-});
+        res.redirect(`${process.env.TRUSTED_DOMAIN}/signin`);
+    }
+);
 
 router.get('/signout', function (req, res, next) {
     req.session.destroy(function (error) {
@@ -32,7 +34,7 @@ router.get('/signout', function (req, res, next) {
         } else {
             res.redirect(`${process.env.TRUSTED_DOMAIN}/signout`);
         }
-    })
+    });
 });
 
 router.all('*', function (req, res, next) {

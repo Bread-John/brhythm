@@ -61,11 +61,11 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+msal.initialize(app);
+
 app.use(passport.initialize());
 app.use(passport.session());
 passportStrategy.initialize(passport);
-
-msal.initialize(app);
 
 app.use('/', require('./router/indexRouter'));
 

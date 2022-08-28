@@ -26,7 +26,7 @@ module.exports = function (sequelize) {
             type: DataTypes.TEXT
         },
         profileImg: {
-            type: DataTypes.TEXT
+            type: DataTypes.BLOB('medium')
         },
         isSuspended: {
             type: DataTypes.BOOLEAN,
