@@ -13,7 +13,7 @@ router.get('/',
     query('limit').if(query('limit').notEmpty()).isInt({ min: 1, max: 40 }),
     query('page').if(query('page').notEmpty()).isInt({ min: 1 }),
     async function (req, res, next) {
-        const { playlistId, userId } = req.query;
+        const { playlistId } = req.query;
         if (playlistId) {
             try {
                 const playlist = await Playlist.findByPk(playlistId, {
@@ -45,32 +45,17 @@ router.get('/',
             } catch (error) {
                 next(error);
             }
-        } else if (userId && userId === req.user.id) {
+        } else if (req.isAuthenticated() && validationResult(req).isEmpty()) {
             const limit = req.query.limit ? parseInt(req.query.limit) : 3;
-
-            try {
-                const playlistSet = await Playlist.findAll({
-                    where: { creatorId: userId },
-                    attributes: { exclude: ['description', 'visibility'] },
-                    order: [['updatedAt', 'DESC']],
-                    limit: limit
-                });
-
-                res.status(200).json(playlistSet);
-            } catch (error) {
-                next(error);
-            }
-        } else if (validationResult(req).isEmpty()) {
-            const limit = req.query.limit ? parseInt(req.query.limit) : 40;
             const page = req.query.page ? parseInt(req.query.page) : 1;
 
             try {
-                const pageCount = Math.ceil(await Playlist.count() / limit) || 1;
+                const pageCount = Math.ceil(await Playlist.count({ where: { creatorId: req.user.id } }) / limit) || 1;
                 if (page > pageCount) {
                     next(new UserFacingError(`Bad request`, 400));
                 } else {
                     const playlistSet = await Playlist.findAll({
-                        where: { visibility: req.isAuthenticated() ? [0, 1] : 0 },
+                        where: { creatorId: req.user.id },
                         attributes: { exclude: ['description', 'visibility'] },
                         order: [['updatedAt', 'DESC']],
                         limit: limit,
