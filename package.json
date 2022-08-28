@@ -1,7 +1,7 @@
 {
   "name": "brhythm",
-  "version": "0.1.0",
-  "description": "An audio streaming & management web application",
+  "version": "1.0.0",
+  "description": "A carefully crafted music streaming platform back-end API",
   "main": "./bin/www",
   "scripts": {
     "start": "node ./bin/www",
