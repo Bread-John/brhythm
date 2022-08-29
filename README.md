@@ -1,10 +1,10 @@
 # Brhythm
 🎵 _Your best rhythm starts from here ..._
 
-A carefully crafted music streaming platform back-end API, powered by Node.JS and Microsoft 365.
+A music streaming platform back-end API, powered by Node.JS and Microsoft 365.
 
 ## TL;DR
-An all-in-one solution for individuals or organisations to upload, manage, stream music in a cost-effective way, but still be able to enjoy functionalities that are comparable to commercial platforms.
+A carefully crafted all-in-one music streaming solution for individuals or organisations to upload, manage, stream music in a cost-effective way, but still be able to enjoy functionalities that are comparable to commercial platforms.
 ### Demo
 _More to come..._
 
@@ -22,9 +22,9 @@ _More to come..._
    2. Go to "Certificates & secrets" section, add a new "Client secret" with desired expiry length
    3. Copy the value of the created secret and paste to a text file
    4. Go to "API permissions" section, add following permissions:
-      - Microsoft Graph --> Delegated permissions --> OpenId permissions --> tick "email" and "profile" --> click "Add permissions" button
-      - Microsoft Graph --> Application permissions --> Files --> tick "Files.ReadWrite.All" --> click "Add permissions" button
-      - Microsoft Graph --> Application permissions --> User --> tick "User.Read.All" --> click "Add permissions" button
+      - Microsoft Graph --> Delegated permissions --> OpenId permissions --> email & profile
+      - Microsoft Graph --> Application permissions --> Files --> Files.ReadWrite.All
+      - Microsoft Graph --> Application permissions --> User --> User.Read.All
    5. Click "Grant admin consent for ..." and confirm
 6. A compatible front-end web user interface _(official front-end SPA will be released soon)_
 7. (Optional, for fetching album cover arts) A valid Last.FM API key, acquired from Last.FM developer portal
@@ -57,8 +57,12 @@ _More to come..._
 
 ## Additional Resources
 - [Register an application with the Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
-- [Microsoft Graph REST API v1.0 endpoint reference](https://docs.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0)
 - [PM2 - Quick Start](https://pm2.keymetrics.io/docs/usage/quick-start/)
+- [Getting Started | Sequelize](https://sequelize.org/docs/v6/getting-started/)
+- [FFmpeg Formats Documentation - 4.17 hls](https://ffmpeg.org/ffmpeg-formats.html#hls-2)
+- [HTTP Live Streaming (HLS) Authoring Specification](https://developer.apple.com/documentation/http_live_streaming/http_live_streaming_hls_authoring_specification_for_apple_devices)
+- [Microsoft Graph REST API v1.0 endpoint reference](https://docs.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0)
+- [OpenID Connect on the Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc)
 
 ## Changelogs
 ### v1.0.0
