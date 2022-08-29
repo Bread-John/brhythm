@@ -13,7 +13,7 @@ _More to come..._
 
 ## Getting Started
 ### Recipe
-1. A computing device that is capable of running Node.JS runtime
+1. A computing device that is capable of running Node.JS runtime environment
 2. A domain name with corresponding SSL certificate configured
 3. A relational database (preferably PostgreSQL) with appropriate access detail ready
 4. A Redis database with appropriate access detail ready
@@ -21,6 +21,11 @@ _More to come..._
    1. Create a new App Registration and configure the Redirect URI (choose "Web" for platform) as https://URL_TO_YOUR_BACKEND/auth/callback
    2. Go to "Certificates & secrets" section, add a new "Client secret" with desired expiry length
    3. Copy the value of the created secret and paste to a text file
+   4. Go to "API permissions" section, add following permissions:
+      - Microsoft Graph --> Delegated permissions --> OpenId permissions --> tick "email" and "profile" --> click "Add permissions" button
+      - Microsoft Graph --> Application permissions --> Files --> tick "Files.ReadWrite.All" --> click "Add permissions" button
+      - Microsoft Graph --> Application permissions --> User --> tick "User.Read.All" --> click "Add permissions" button
+   5. Click "Grant admin consent for ..." and confirm
 6. A compatible front-end web user interface _(official front-end SPA will be released soon)_
 7. (Optional, for fetching album cover arts) A valid Last.FM API key, acquired from Last.FM developer portal
 
