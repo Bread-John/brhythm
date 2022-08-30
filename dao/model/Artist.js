@@ -11,7 +11,6 @@ module.exports = function (sequelize) {
         name: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
             defaultValue: 'Unnamed Artist'
         },
         introduction: {

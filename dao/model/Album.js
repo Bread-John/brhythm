@@ -37,6 +37,9 @@ module.exports = function (sequelize) {
     }, {
         tableName: 'b_album',
         indexes: [{
+            unique: true,
+            fields: ['title', 'artistId']
+        }, {
             name: 'index_b_album_trigram',
             fields: [sequelize.literal('title gin_trgm_ops')],
             using: 'GIN',

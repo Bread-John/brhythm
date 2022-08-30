@@ -12,9 +12,9 @@ module.exports = {
                 });
         });
     },
-    syncModels: function (forceSync) {
+    syncModels: function (alterSync) {
         return new Promise(function (resolve, reject) {
-            sequelize.sync({ force: forceSync })
+            sequelize.sync({ alter: alterSync })
                 .then(async function () {
                     const [results, ] = await sequelize.query(`SELECT * FROM pg_extension WHERE extname='pg_trgm';`)
                     if (!results) {
