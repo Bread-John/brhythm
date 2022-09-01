@@ -9,6 +9,15 @@ A carefully crafted all-in-one music streaming solution for individuals or organ
 _More to come..._
 
 ## Features
+- User authentication via Microsoft 365 OAuth
+- Manage music based on artists, albums and tracks
+- Create, add tracks to, and share your playlists
+- Serve music content in byte chunks to improve user experience
+- Automatically transcode and encrypt music content upon uploads
+- Automatically fetch album cover arts and descriptions from external API
+- Host audio content on Business OneDrive for better use of resources
+- Secure transmission of copyrighted music content against leaks
+
 _More to come..._
 
 ## Getting Started
