@@ -58,10 +58,10 @@ const msalConfig = {
                             console.error(message);
                             break;
                         case msal.LogLevel.Info:
-                            console.info(message);
+                            //console.info(message);
                             break;
                         case msal.LogLevel.Verbose:
-                            console.debug(message);
+                            //console.debug(message);
                             break;
                         case msal.LogLevel.Warning:
                             console.warn(message);
