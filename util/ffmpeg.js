@@ -24,7 +24,7 @@ module.exports = {
                 .input(`${filePath}/${sourceFileName}`)
                 .noVideo()
                 .format('hls')
-                .audioCodec('libfdk_aac')
+                .audioCodec('aac')
                 .audioBitrate('256k')
                 .outputOptions([
                     '-hls_time 10',
