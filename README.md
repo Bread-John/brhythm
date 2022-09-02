@@ -15,7 +15,7 @@ _More to come..._
 - Serve music content in byte chunks to improve user experience
 - Automatically transcode and encrypt music content upon uploads
 - Automatically fetch album cover arts and descriptions from external API
-- Host audio content on Business OneDrive for better use of resources
+- Use OneDrive Business as the storage solution for static contents
 - Secure transmission of copyrighted music content against leaks
 
 _More to come..._
