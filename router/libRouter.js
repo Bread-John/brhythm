@@ -255,7 +255,7 @@ router.get('/song',
                     const songSet = await Song.findAll({
                         attributes: { exclude: ['fileName', 'fileIdentifier', 'extIdentifier', 'ownerId', 'createdAt', 'updatedAt'] },
                         include: [Artist, { model: Album, attributes: ['id', 'title', 'coverImg'] }],
-                        order: [['title', 'ASC']],
+                        order: [['createdAt', 'DESC']],
                         limit: limit,
                         offset: limit * (page - 1)
                     });

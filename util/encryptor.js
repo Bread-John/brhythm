@@ -14,7 +14,7 @@ module.exports = {
                         if (err) return reject(err);
 
                         const keyInfo =
-                            `${process.env.API_DOMAIN}/key/brhythm_${fileIdentifier}_stream_enc.key\n` +
+                            `/key/brhythm_${fileIdentifier}_stream_enc.key\n` +
                             `${filePath}/brhythm_${fileIdentifier}_stream_enc.key\n` +
                             `${iv.toString('hex')}\n`
                         ;
