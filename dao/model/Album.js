@@ -3,10 +3,9 @@ const { DataTypes } = require('sequelize');
 module.exports = function (sequelize) {
     sequelize.define('Album', {
         id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            autoIncrement: true,
-            primaryKey: true
+            type: DataTypes.UUID,
+            primaryKey: true,
+            defaultValue: DataTypes.UUIDV4
         },
         title: {
             type: DataTypes.STRING,
