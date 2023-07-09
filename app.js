@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const passport = require('passport');
 const session = require('express-session');
 const Redis = require('ioredis');
-const RedisStore = require('connect-redis')(session);
+const RedisStore = require('connect-redis').default;
 require('dotenv').config();
 
 const dao = require('./dao/main');
