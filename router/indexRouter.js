@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const { Readable } = require('stream');
 
 const { ensureAuthenticated } = require('../lib/passport');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
@@ -111,8 +112,10 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                                                 'Content-Type': extToMIME(path.extname(resourceName))
                                             };
                                             res.writeHead(206, resHeaders);
-                                            stream.pipe(res);
-                                            stream.on('error', function (err) { next(err); });
+
+                                            const resStream = Readable.fromWeb(stream);
+                                            resStream.pipe(res);
+                                            resStream.on('error', function (err) { next(err); });
                                         })
                                         .catch(function (error) {
                                             next(error);
@@ -126,8 +129,10 @@ router.get('/stream/:resourceName', async function (req, res, next) {
                                             'Content-Type': extToMIME(path.extname(resourceName))
                                         };
                                         res.writeHead(200, resHeaders);
-                                        stream.pipe(res);
-                                        stream.on('error', function (err) { next(err); });
+
+                                        const resStream = Readable.fromWeb(stream);
+                                        resStream.pipe(res);
+                                        resStream.on('error', function (err) { next(err); });
                                     })
                                     .catch(function (error) {
                                         next(error);
@@ -172,8 +177,10 @@ router.get('/key/:resourceName', async function (req, res, next) {
                                         'Content-Type': extToMIME(path.extname(resourceName))
                                     };
                                     res.writeHead(200, resHeaders);
-                                    stream.pipe(res);
-                                    stream.on('error', function (err) { next(err); });
+
+                                    const resStream = Readable.fromWeb(stream);
+                                    resStream.pipe(res);
+                                    resStream.on('error', function (err) { next(err); });
                                 })
                                 .catch(function (error) {
                                     next(error);
