@@ -1,5 +1,3 @@
-require('isomorphic-fetch');
-
 module.exports = {
     getCoverArt: function (album, artist) {
         return new Promise(function (resolve) {

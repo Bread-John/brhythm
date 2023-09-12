@@ -2,7 +2,6 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const express = require('express');
 const helmet = require('helmet');
-const passport = require('passport');
 const session = require('express-session');
 const Redis = require('ioredis');
 const RedisStore = require('connect-redis').default;
@@ -10,7 +9,7 @@ require('dotenv').config();
 
 const dao = require('./dao/main');
 const msal = require('./lib/msal');
-const passportStrategy = require('./lib/passport');
+const passport = require('./lib/passport');
 
 const app = express();
 
@@ -61,11 +60,9 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-msal.initialize(app);
+msal.initialise(app);
 
-app.use(passport.initialize());
-app.use(passport.session());
-passportStrategy.initialize(passport);
+passport.initialise(app);
 
 app.use('/', require('./router/indexRouter'));
 
