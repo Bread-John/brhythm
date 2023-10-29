@@ -45,9 +45,9 @@ const { Artist, Album, Song } = require('./dao/config').models;
 
 const msalConfig = {
     auth: {
-        clientId: process.env.CLIENT_ID,
-        authority: `https://login.microsoftonline.com/${process.env.TENANT_ID}`,
-        clientSecret: process.env.CLIENT_SECRET
+        clientId: process.env.AAD_API_CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${process.env.AAD_TENANT_ID}`,
+        clientSecret: process.env.AAD_API_CLIENT_SECRET
     },
     system: {
         loggerOptions: {
@@ -212,7 +212,7 @@ const upload = async (file, msalClient) => {
             } catch (error) {
                 await t.rollback();
 
-                reject(error);
+                console.error(`ERROR: Failed on processing file "${file}" (${error.message})`);
             }
         });
     });
