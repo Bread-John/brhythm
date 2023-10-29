@@ -7,6 +7,7 @@
 const http = require('http');
 const fs = require('fs');
 const app = require('../app');
+const dao = require('../dao/main');
 
 /**
  * Get port from environment and store in Express.
@@ -16,18 +17,29 @@ const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create HTTP server, and attach event listeners.
  */
 
 const server = http.createServer(app);
 
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+/**
+ * Attempt to connect to database and sync data models, and then listen on provided port, on all network interfaces.
+ */
+
+dao
+    .syncModels(false)
+    .then(function () {
+        console.info(`[${new Date(Date.now()).toUTCString()}] - DAO Info: Data Access Models successfully synced`);
+
+        server.listen(port);
+    })
+    .catch(function (err) {
+        console.error(`[${new Date(Date.now()).toUTCString()}] - DAO ${err.name}: ${err.message}`);
+        process.exit(1);
+    });
 
 /**
  * Normalize a port into a number, string, or false.
@@ -86,7 +98,7 @@ function onListening() {
         ? `Pipe ${addr}`
         : `Port ${addr.port} at ${addr.address}`;
 
-    console.log(`[${new Date(Date.now()).toUTCString()}] - HTTP server Info: Listening on ${bind}`);
+    console.info(`[${new Date(Date.now()).toUTCString()}] - HTTP server Info: Listening on ${bind}`);
 }
 
 /**

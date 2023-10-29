@@ -1,13 +1,11 @@
-const cors = require('cors');
+require('dotenv').config();
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const express = require('express');
 const helmet = require('helmet');
-const session = require('express-session');
-const Redis = require('ioredis');
-const RedisStore = require('connect-redis').default;
-require('dotenv').config();
+const createError = require('http-errors');
+//const Redis = require('ioredis');
 
-const dao = require('./dao/main');
 const msal = require('./lib/msal');
 const passport = require('./lib/passport');
 
@@ -21,41 +19,17 @@ app.use(cors({
     'credentials': true,
     'optionsSuccessStatus': 200
 }));
+
 app.use(helmet());
 
-dao
-    .syncModels(false)
-    .then(function () {
-        console.log(`[${new Date(Date.now()).toUTCString()}] - DAO Info: Data Access Models successfully synced`);
-    })
-    .catch(function (err) {
-        console.error(`[${new Date(Date.now()).toUTCString()}] - DAO ${err.name}: ${err.message}`);
-        process.exit(1);
-    });
-
-let redisClient = new Redis({
+/*const redisClient = new Redis({
     port: process.env.REDIS_PORT,
     host: process.env.REDIS_HOST,
     username: process.env.REDIS_USER,
     password: process.env.REDIS_PASS
-});
+});*/
 
 app.use(cookieParser());
-
-app.use(session({
-    cookie: {
-        domain: process.env.COOKIE_DOMAIN,
-        httpOnly: true,
-        secure: process.env.CURRENT_ENV !== 'dev',
-        maxAge: 2 * 24 * 60 * 60 * 1000
-    },
-    name: 'b-session-id',
-    store: new RedisStore({ client: redisClient }),
-    saveUninitialized: false,
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    unset: 'destroy'
-}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -65,6 +39,10 @@ msal.initialise(app);
 passport.initialise(app);
 
 app.use('/', require('./router/indexRouter'));
+
+app.use(function (req, res, next) {
+    next(createError(404, `Could not ${req.method} resource '${req.originalUrl}'`));
+});
 
 app.use(function (err, req, res, next) {
     console.error(`[${new Date(Date.now()).toUTCString()}] - ${err.name}: ${err.message}`);

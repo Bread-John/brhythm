@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const { Readable } = require('stream');
 
-const { ensureAuthenticated } = require('../lib/passport');
+const { authenticateUser } = require('../lib/passport');
 const { getItemByPath, getFileByPath, getFileSliceByPath } = require('../lib/msgraph/File');
 const { ApplicationError, UserFacingError } = require('../lib/customError');
 const { generateAuthToken, generateKeyingToken, verifyAuthToken, verifyKeyingToken } = require('../util/playbackToken');
@@ -16,7 +16,7 @@ router.get('/', function (req, res) {
     res.status(418).json({ message: 'Could not brew coffee with a teapot 🫖' });
 });
 
-router.get('/user', ensureAuthenticated, function (req, res) {
+router.get('/user', authenticateUser, function (req, res) {
     res.status(200).json(req.user);
 });
 
@@ -87,7 +87,7 @@ router.get('/stream/:resourceName', async function (req, res, next) {
     const token = req.cookies['b-media-access'];
 
     if (!token) {
-        next(new UserFacingError(`Access denied`, 401));
+        next(new UserFacingError(`Access denied`, 403));
     } else {
         verifyAuthToken(token)
             .then(function (payload) {
@@ -160,7 +160,7 @@ router.get('/key/:resourceName', async function (req, res, next) {
     const token = req.cookies['b-key-acquisition'];
 
     if (!token) {
-        next(new UserFacingError(`Access denied`, 401));
+        next(new UserFacingError(`Access denied`, 403));
     } else {
         verifyKeyingToken(token)
             .then(function (payload) {
@@ -201,15 +201,11 @@ router.get('/key/:resourceName', async function (req, res, next) {
     }
 });
 
-router.use('/auth', require('./authRouter'));
+//router.use('/auth', require('./authRouter'));
 router.use('/discovery', require('./discoveryRouter'));
 router.use('/library', require('./libRouter'));
 router.use('/management', require('./mgmtRouter'));
 router.use('/playlist', require('./playlistRouter'));
 router.use('/search', require('./searchRouter'));
-
-router.all('*', function (req, res, next) {
-    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
-});
 
 module.exports = router;
