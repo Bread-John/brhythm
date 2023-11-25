@@ -105,8 +105,4 @@ router.get('/user', function (req, res, next) {
     res.status(204).json({ error: 'Not implemented' });
 });
 
-router.all('*', function (req, res, next) {
-    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
-});
-
 module.exports = router;

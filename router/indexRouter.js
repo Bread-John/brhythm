@@ -201,7 +201,6 @@ router.get('/key/:resourceName', async function (req, res, next) {
     }
 });
 
-//router.use('/auth', require('./authRouter'));
 router.use('/discovery', require('./discoveryRouter'));
 router.use('/library', require('./libRouter'));
 router.use('/management', require('./mgmtRouter'));

@@ -279,8 +279,4 @@ router.get('/song',
     }
 );
 
-router.all('*', function (req, res, next) {
-    next(new UserFacingError(`Could not find resource under ${req.originalUrl}`, 404));
-});
-
 module.exports = router;
