@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 
 const multer = require('../lib/multer');
-const { ensureAuthenticatedAsAdmin } = require('../lib/passport');
+const { authenticateAdminOrFail } = require('../lib/passport');
 const { getItemByPath, uploadFileToParent } = require('../lib/msgraph/File');
 const { UserFacingError } = require('../lib/customError');
 const id3tagParser = require('../util/id3tagParser');
@@ -16,7 +16,7 @@ const { Artist, Album, Song } = require('../dao/config').models;
 
 const router = express.Router();
 
-router.post('/upload', ensureAuthenticatedAsAdmin, multer.single('media'), async function (req, res, next) {
+router.post('/upload', authenticateAdminOrFail, multer.single('media'), async function (req, res, next) {
     const { visibility } = req.body;
     if (!req.file) {
         next(new UserFacingError(`Uploaded file is not accepted`, 400));

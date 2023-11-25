@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 
-const { ensureAuthenticated } = require('../lib/passport');
+const { authenticateUser, authenticateUserOrFail } = require('../lib/passport');
 const { UserFacingError } = require('../lib/customError');
 
 const { newTransaction } = require('../dao/main');
@@ -10,6 +10,7 @@ const { Album, Artist, Playlist, PlaylistSong, Song, User } = require('../dao/co
 const router = express.Router();
 
 router.get('/',
+    authenticateUser,
     query('limit').if(query('limit').notEmpty()).isInt({ min: 1, max: 40 }),
     query('page').if(query('page').notEmpty()).isInt({ min: 1 }),
     async function (req, res, next) {
@@ -34,9 +35,9 @@ router.get('/',
                 });
                 if (!playlist) {
                     next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
-                } else if (playlist.visibility === 1 && !req.isAuthenticated()) {
+                } else if (playlist.visibility === 1 && !req.user) {
                     next(new UserFacingError(`Access to playlist of ID ${playlistId} is restricted to organisation users only`, 403));
-                } else if (playlist.visibility === 2 && playlist.creatorId !== req.user.id) {
+                } else if (playlist.visibility === 2 && playlist.creatorId !== req.user?.id) {
                     // Not disclose any information on private playlists
                     next(new UserFacingError(`Playlist of ID ${playlistId} does not exist`, 404));
                 } else {
@@ -84,7 +85,7 @@ router.get('/',
 );
 
 router.post('/create',
-    ensureAuthenticated,
+    authenticateUserOrFail,
     body('name').isLength({ min: 2, max: 50 }),
     body('description').isLength({ max: 300 }),
     body('visibility').matches(/^[0-2]$/),
@@ -112,7 +113,7 @@ router.post('/create',
 );
 
 router.post('/edit',
-    ensureAuthenticated,
+    authenticateUserOrFail,
     body('playlistId').notEmpty(),
     body('name').if(body('name').notEmpty()).isLength({ min: 2, max: 50 }),
     body('description').isLength({ max: 300 }),
@@ -151,7 +152,7 @@ router.post('/edit',
     }
 );
 
-router.post('/delete', ensureAuthenticated, function (req, res, next) {
+router.post('/delete', authenticateUserOrFail, function (req, res, next) {
     const { playlistId } = req.body;
     if (!playlistId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -180,7 +181,7 @@ router.post('/delete', ensureAuthenticated, function (req, res, next) {
     }
 });
 
-router.post('/add', ensureAuthenticated, async function (req, res, next) {
+router.post('/add', authenticateUserOrFail, async function (req, res, next) {
     const { playlistId, songId } = req.body;
     if (!playlistId || !songId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -211,7 +212,7 @@ router.post('/add', ensureAuthenticated, async function (req, res, next) {
     }
 });
 
-router.post('/remove', ensureAuthenticated, async function (req, res, next) {
+router.post('/remove', authenticateUserOrFail, async function (req, res, next) {
     const { playlistId, songId } = req.body;
     if (!playlistId || !songId) {
         next(new UserFacingError(`Bad request`, 400));

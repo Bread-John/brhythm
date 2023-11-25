@@ -17,10 +17,10 @@ router.get('/', function (req, res) {
 });
 
 router.get('/user', authenticateUser, function (req, res) {
-    res.status(200).json(req.user);
+    res.status(200).json(req.user || null);
 });
 
-router.post('/playback', async function (req, res, next) {
+router.post('/playback', authenticateUser, async function (req, res, next) {
     const { songId } = req.body;
     if (!songId) {
         next(new UserFacingError(`Bad request`, 400));
@@ -29,7 +29,7 @@ router.post('/playback', async function (req, res, next) {
             const song = await Song.findByPk(songId, { include: [Album, Artist] });
             if (!song) {
                 next(new UserFacingError(`Music of ID ${songId} does not exist`, 404));
-            } else if (song.visibility === 1 && !req.isAuthenticated()) {
+            } else if (song.visibility === 1 && !req.user) {
                 next(new UserFacingError(`Access to this track is restricted to internal users only`, 403));
             } else {
                 await Song.increment('playCount', { where: { id: song.id } });
